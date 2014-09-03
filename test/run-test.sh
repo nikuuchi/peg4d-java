@@ -8,7 +8,7 @@ OK=0
 echo > $LOG
 for a in `ls ./test/*.peg`  ; do
 	echo "test rule: ${a}"
-	t=${a/\.peg/_}
+	t=${a/\.peg/_in}
 	for b in `ls ${t}* ` ; do
 		COUNT=$((COUNT + 1))
 		echo "run test ${b}"
