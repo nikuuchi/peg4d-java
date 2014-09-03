@@ -1,5 +1,5 @@
 TopLevel 
-    = File
+    = File ;
 
 File
     = [abc]+ ;

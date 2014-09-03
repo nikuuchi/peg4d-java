@@ -1,8 +1,8 @@
 TopLevel 
-    = File
+    = File ;
 
 File
     = {@ @A }* ;
     
 A
-    = 'hoge' #tag ;
+    = { 'hoge' #tag } ;
