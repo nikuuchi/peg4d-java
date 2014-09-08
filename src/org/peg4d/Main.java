@@ -347,6 +347,9 @@ public class Main {
 		else if(OutputType.equalsIgnoreCase("csv")) {
 			new Generator(OutputFileName).writeCommaSeparateValue(pego, 0.9);
 		}
+		else if(OutputType.equalsIgnoreCase("c")) {
+			new CSourceGenerator(OutputFileName).writeC(pego);
+		}
 	}
 
 	private final static void displayShellVersion(Grammar peg) {
