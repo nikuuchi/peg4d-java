@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 
 import org.peg4d.ext.Generator;
 import org.peg4d.vm.SimpleVirtualMachine;
-import org.peg4d.vm.VirtualMachine;
 
 public class Main {
 	public final static String  ProgName  = "PEG4d";
@@ -251,6 +250,7 @@ public class Main {
 		driverMap.put("peg", GrammarFormatter.class);
 		driverMap.put("vm", CodeGenerator.class);
 		driverMap.put("svm", SimpleCodeGenerator.class);
+		driverMap.put("c", CSourceGenerator.class);
 	}
 
 	private static GrammarFormatter loadDriverImpl(String driverName) {
@@ -329,7 +329,7 @@ public class Main {
 			System.out.println(" GO!!");
 		}
 		p.beginPeformStat();
-		ParsingObject pego = p.parse(startPoint);
+		ParsingObject pego = p.parse(StartingPoint);
 		if(p.isFailure()) {
 			p.showPosition("syntax error", p.fpos);
 			return;

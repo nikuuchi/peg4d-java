@@ -2,12 +2,14 @@ package org.peg4d;
 
 public interface CTags {
 
+	abstract void genSource(ParsingObject pego);
 	abstract void genFunction(ParsingObject pego);
+	abstract void genDeclaration(ParsingObject pego);
 	abstract void genTypeDeclaration(ParsingObject pego);
 	abstract void genVarDecl(ParsingObject pego);
 	abstract void genDesignation(ParsingObject pego);
 
-	abstract void genTint(ParsingObject pego);
+	abstract void genTInt(ParsingObject pego);
 	abstract void genTStruct(ParsingObject pego);
 	abstract void genTUnion(ParsingObject pego);
 	abstract void genTConst(ParsingObject pego);

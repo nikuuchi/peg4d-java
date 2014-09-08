@@ -1,5 +1,8 @@
 package org.peg4d;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.peg4d.ext.Generator;
 
 public class CSourceGenerator extends Generator implements CTags {
@@ -9,13 +12,45 @@ public class CSourceGenerator extends Generator implements CTags {
 	}
 
 	public void writeC(ParsingObject pego) {
+		System.out.println(pego);
+		this.dispatch(pego);
 		this.close();
+	}
+
+	protected void dispatch(ParsingObject po) {
+		Method m = null;
+		String name = "gen" + po.getTag().toString();
+		try {
+			m = this.getClass().getDeclaredMethod(name, ParsingObject.class);
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			e.printStackTrace();
+		}
+		if(m != null) {
+			try {
+				m.invoke(this, po);
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public void genSource(ParsingObject pego) {
+		for(int i = 0; i < pego.size(); i++) {
+			ParsingObject p = pego.get(i);
+			this.dispatch(p);
+		}
 	}
 
 	@Override
 	public void genFunction(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.out.println(pego);
 	}
 
 	@Override
@@ -37,9 +72,8 @@ public class CSourceGenerator extends Generator implements CTags {
 	}
 
 	@Override
-	public void genTint(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+	public void genTInt(ParsingObject pego) {
+		this.write("int");
 	}
 
 	@Override
@@ -352,6 +386,12 @@ public class CSourceGenerator extends Generator implements CTags {
 	public void genApply(ParsingObject pego) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void genDeclaration(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.dispatch(pego.get(1));
 	}
 
 }
