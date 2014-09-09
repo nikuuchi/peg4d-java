@@ -48,9 +48,35 @@ public class CSourceGenerator extends Generator implements CTags {
 		}
 	}
 
+	private void createAnnotation(ParsingObject annotations) {
+		if(annotations.size() > 0) {
+			this.write(" ");
+		}
+		for(int i = 0; i < annotations.size(); i++) {
+			ParsingObject annotation = annotations.get(i);
+			this.dispatch(annotation);
+		}
+	}
+
+	private void createParameters(ParsingObject params) {
+		this.write("(");
+		for(int i = 0; i < params.size(); i++) {
+			ParsingObject param = params.get(i);
+			this.dispatch(param);
+		}
+		this.write(")");
+	}
+
 	@Override
 	public void genFunction(ParsingObject pego) {
-		System.out.println(pego);
+		this.createAnnotation(pego.get(0));
+		this.dispatch(pego.get(1));
+		this.write(" ");
+		this.dispatch(pego.get(2));
+
+		this.createParameters(pego.get(3));
+
+		this.dispatch(pego.get(4));
 	}
 
 	@Override
@@ -150,14 +176,25 @@ public class CSourceGenerator extends Generator implements CTags {
 
 	@Override
 	public void genBlock(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("{\n");
+		for(int i = 0; i < pego.size(); i++) {
+			ParsingObject p = pego.get(i);
+			this.dispatch(p);
+			this.write("\n");
+		}
+		this.write("}");
 	}
 
 	@Override
 	public void genIf(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("if(");
+		this.dispatch(pego.get(0));
+		this.write(")");
+		this.dispatch(pego.get(1));
+		if(pego.size() > 2) {
+			this.write(" else ");
+			this.dispatch(pego.get(2));
+		}
 	}
 
 	@Override
@@ -198,8 +235,9 @@ public class CSourceGenerator extends Generator implements CTags {
 
 	@Override
 	public void genReturn(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("return ");
+		this.dispatch(pego.get(0));
+		this.write(";");
 	}
 
 	@Override
@@ -392,6 +430,27 @@ public class CSourceGenerator extends Generator implements CTags {
 	public void genDeclaration(ParsingObject pego) {
 		this.dispatch(pego.get(0));
 		this.dispatch(pego.get(1));
+	}
+
+	@Override
+	public void genName(ParsingObject pego) {
+		this.write(pego.getText());
+	}
+
+	@Override
+	public void genInteger(ParsingObject pego) {
+		this.write(pego.getText());
+	}
+
+	private void createBinaryExpression(ParsingObject pego, String op) {
+		this.dispatch(pego.get(0));
+		this.write(op);
+		this.dispatch(pego.get(1));
+	}
+
+	@Override
+	public void genLessThan(ParsingObject pego) {
+		this.createBinaryExpression(pego, " < ");
 	}
 
 }

@@ -338,6 +338,7 @@ public class Main {
 		if(p.hasByteChar()) {
 			p.showPosition("unconsumed", p.pos);
 		}
+		System.out.println(OutputType);
 		if(OutputType.equalsIgnoreCase("pego")) {
 			new Generator(OutputFileName).writePego(pego);
 		}

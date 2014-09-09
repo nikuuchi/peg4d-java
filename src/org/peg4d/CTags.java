@@ -20,13 +20,14 @@ public interface CTags {
 	abstract void genTBoolean(ParsingObject pego);
 	abstract void genTComplex(ParsingObject pego);
 	abstract void genTName(ParsingObject pego);
+	abstract void genName(ParsingObject pego);
 
 	abstract void genBit(ParsingObject pego);
 	abstract void genList(ParsingObject pego);
 
 	abstract void genBlock(ParsingObject pego);
 
-
+	abstract void genInteger(ParsingObject pego);
 
 	abstract void genIf(ParsingObject pego);
 	abstract void genWhile(ParsingObject pego);
@@ -43,6 +44,8 @@ public interface CTags {
 
 	abstract void genLabelBlock(ParsingObject pego);
 	abstract void genEmpty(ParsingObject pego);
+
+	abstract void genLessThan(ParsingObject pego);
 
 	abstract void genAssign(ParsingObject pego);
 	abstract void genAssignMul(ParsingObject pego);
