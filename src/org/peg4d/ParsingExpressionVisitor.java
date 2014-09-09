@@ -1,6 +1,6 @@
 package org.peg4d;
 
-class ParsingVisitor {
+class ParsingExpressionVisitor {
 	private UMap<String> visitedMap = new UMap<String>();
 	boolean isVisited(String name) {
 		if(this.visitedMap != null) {
@@ -37,7 +37,7 @@ class ParsingVisitor {
 	}
 	public void visitMessage(PMessage e) {
 	}
-	public void visitIndent(PIndent e) {
+	public void visitIndent(ParsingIndent e) {
 	}
 	public void visitUnary(PUnary e) {
 		e.inner.visit(this);
@@ -77,11 +77,24 @@ class ParsingVisitor {
 	public void visitOperation(POperator e) {
 		e.inner.visit(this);
 	}
-	public void visitDeprecated(PDeprecated e) {
+
+	public void visitParsingFlag(ParsingFlag e) {
+	}
+	public void visitFail(ParsingFail parsingFail) {
+	}
+	public void visitCatch(ParsingCatch parsingCatch) {
+	}
+	
+	public void visitParsingEnableFlag(ParsingEnableFlag e) {
+		e.inner.visit(this);
+	}
+	
+	public void visitParsingDisableFlag(ParsingDisableFlag e) {
+		e.inner.visit(this);
 	}
 }
 
-class ListMaker extends ParsingVisitor {
+class ListMaker extends ParsingExpressionVisitor {
 	private UList<String> nameList;
 	private Grammar peg;
 	UList<String> make(Grammar peg, String startPoint) {
@@ -106,7 +119,7 @@ class ListMaker extends ParsingVisitor {
 	}
 }
 
-class NonTerminalChecker extends ParsingVisitor {
+class NonTerminalChecker extends ParsingExpressionVisitor {
 	PegRule startRule;
 	PegRule checking;
 	int     consumedMinimumLength;
@@ -134,10 +147,8 @@ class NonTerminalChecker extends ParsingVisitor {
 		PegRule next = e.base.getRule(e.symbol);
 		if(next == null) {
 			checking.reportError("undefined label: " + e.symbol);
-			e.base.setRule(e.symbol, new PUndefinedNonTerminal(e.base, 0, e.symbol));
+			e.base.setRule(e.symbol, new ParsingFlag(e.base, 0, e.symbol));
 			next = e.base.getRule(e.symbol);
-//			e.base.foundError = true;
-//			return;
 		}
 		e.resolvedExpression = next.expr;
 		if(next == checking) {
@@ -271,7 +282,7 @@ class NonTerminalChecker extends ParsingVisitor {
 }
 
 
-class Inliner extends ParsingVisitor {
+class Inliner extends ParsingExpressionVisitor {
 	Grammar peg;
 	Inliner(Grammar peg) {
 		this.peg = peg;
@@ -334,7 +345,7 @@ class Inliner extends ParsingVisitor {
 	}
 }
 
-class Optimizer extends ParsingVisitor {
+class Optimizer extends ParsingExpressionVisitor {
 	Grammar peg;
 	Optimizer(Grammar peg) {
 		this.peg = peg;
@@ -425,7 +436,7 @@ class Optimizer extends ParsingVisitor {
 	}
 }
 
-class MemoRemover extends ParsingVisitor {
+class MemoRemover extends ParsingExpressionVisitor {
 	UList<PExpression> pegList;
 	int cutMiss = -1;
 	int RemovedCount = 0;
@@ -509,7 +520,7 @@ class MemoRemover extends ParsingVisitor {
 	
 }
 
-class ObjectRemover extends ParsingVisitor {
+class ObjectRemover extends ParsingExpressionVisitor {
 	ObjectRemover() {
 	}
 	
@@ -548,7 +559,7 @@ class ObjectRemover extends ParsingVisitor {
 		this.returnPeg = null;
 	}
 	@Override
-	public void visitIndent(PIndent e) {
+	public void visitIndent(ParsingIndent e) {
 		this.returnPeg = null;
 	}
 	@Override

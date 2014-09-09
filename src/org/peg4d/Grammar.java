@@ -374,8 +374,36 @@ public class Grammar {
 		this.factory.addSequence(l, e);
 	}
 
-	public PExpression newDeprecated(String message, PExpression e) {
-		return new PDeprecated(message, e);
+	public PExpression newDebug(PExpression e) {
+		return new ParsingDebug(e);
+	}
+
+	public PExpression newFail(String message) {
+		return new ParsingFail(this, 0, message);
+	}
+
+	public PExpression newCatch() {
+		return new ParsingCatch(this, 0);
+	}
+
+	
+	public PExpression newFlag(String flagName) {
+		return new ParsingFlag(this, 0, flagName);
+	}
+
+	public PExpression newEnableFlag(String flagName, PExpression e) {
+		return new ParsingEnableFlag(flagName, e);
+	}
+
+	public PExpression newDisableFlag(String flagName, PExpression e) {
+		return new ParsingDisableFlag(flagName, e);
+	}
+
+	public PExpression newIndent(PExpression e) {
+		if(e == null) {
+			return new ParsingIndent(this, 0);
+		}
+		return new ParsingStackIndent(e);
 	}
 
 }
@@ -407,7 +435,7 @@ class PegRule {
 	
 	void reportError(String msg) {
 		if(this.source != null) {
-			Main._PrintLine(this.source.formatErrorMessage("error", this.pos, msg));
+			Main._PrintLine(this.source.formatPositionLine("error", this.pos, msg));
 		}
 		else {
 			System.out.println("ERROR: " + msg);
@@ -415,7 +443,7 @@ class PegRule {
 	}
 	void reportWarning(String msg) {
 		if(this.source != null) {
-			Main._PrintLine(this.source.formatErrorMessage("warning", this.pos, msg));
+			Main._PrintLine(this.source.formatPositionLine("warning", this.pos, msg));
 		}
 	}
 
@@ -468,11 +496,10 @@ class PegRule {
 			a = a.next;
 		}
 	}
-	
-	
 }
 
 class PEG4dGrammar extends Grammar {
+	
 	static final int PRule        = ParsingTag.tagId("PRule");
 	static final int PImport      = ParsingTag.tagId("PImport");
 	static final int PAnnotation  = ParsingTag.tagId("PAnnotation");
@@ -487,7 +514,8 @@ class PEG4dGrammar extends Grammar {
 	static final int POneMore     = ParsingTag.tagId("POneMore");
 	static final int PZeroMore    = ParsingTag.tagId("PZeroMore");
 	static final int PTimes       = ParsingTag.tagId("PTimes");
-	static final int PMatch       = ParsingTag.tagId("PMatch");
+	
+	
 	static final int PSequence    = ParsingTag.tagId("PSequence");
 	static final int PChoice      = ParsingTag.tagId("PChoice");
 	static final int PConstructor = ParsingTag.tagId("PConstructor");
@@ -495,7 +523,18 @@ class PEG4dGrammar extends Grammar {
 	static final int PLeftJoin    = ParsingTag.tagId("PLeftJoin");
 	static final int PTagging     = ParsingTag.tagId("PTagging");
 	static final int PMessage     = ParsingTag.tagId("PMessage");
-	static final int PDeprecated  = ParsingTag.tagId("PDeprecated");
+	
+	static final int PMatch       = ParsingTag.tagId("PMatch");
+
+	static final int PFlag        = ParsingTag.tagId("PFlag");
+	static final int PEnable      = ParsingTag.tagId("PEnable");
+	static final int PDisable     = ParsingTag.tagId("PDisable");
+	static final int PIndent      = ParsingTag.tagId("PIndent");
+
+	static final int PDebug       = ParsingTag.tagId("PDebug");
+	static final int PFail        = ParsingTag.tagId("PFail");
+	static final int PCatch       = ParsingTag.tagId("PCatch");
+		
 	static final int Name         = ParsingTag.tagId("Name");
 	static final int List         = ParsingTag.tagId("List");
 	static final int Integer      = ParsingTag.tagId("Integer");
@@ -580,9 +619,6 @@ class PEG4dGrammar extends Grammar {
 					// self-redefinition
 					return e;  // FIXME
 				}
-			}
-			if(symbol.equals("indent") && !loading.hasRule("indent")) {
-				loading.setRule("indent", new PIndent(loading, 0));
 			}
 			if(symbol.length() > 0 && !symbol.endsWith("_") && !loading.hasRule(symbol) && Grammar.PEG4d.hasRule(symbol)) { // comment
 				Main.printVerbose("implicit importing", symbol);
@@ -700,9 +736,30 @@ class PEG4dGrammar extends Grammar {
 		if(pego.is(PEG4dGrammar.PMatch)) {
 			return loading.newMatch(toParsingExpression(loading, ruleName, pego.get(0)));
 		}
-		if(pego.is(PEG4dGrammar.PDeprecated)) {
-			return loading.newDeprecated(ParsingCharset.unquoteString(pego.textAt(0, "")),
-					toParsingExpression(loading, ruleName, pego.get(1)));
+		if(pego.is(PEG4dGrammar.PEnable)) {
+			return loading.newEnableFlag(pego.textAt(0, ""), toParsingExpression(loading, ruleName, pego.get(1)));
+		}
+		if(pego.is(PEG4dGrammar.PDisable)) {
+			return loading.newDisableFlag(pego.textAt(0, ""), toParsingExpression(loading, ruleName, pego.get(1)));
+		}
+		if(pego.is(PEG4dGrammar.PFlag)) {
+			return loading.newFlag(pego.getText());
+		}
+		if(pego.is(PEG4dGrammar.PIndent)) {
+			if(pego.size() == 0) {
+				return loading.newIndent(null);
+			}
+			return loading.newIndent(toParsingExpression(loading, ruleName, pego.get(0)));
+		}
+		
+		if(pego.is(PEG4dGrammar.PDebug)) {
+			return loading.newDebug(toParsingExpression(loading, ruleName, pego.get(0)));
+		}
+		if(pego.is(PEG4dGrammar.PFail)) {
+			return loading.newFail(ParsingCharset.unquoteString(pego.textAt(0, "")));
+		}
+		if(pego.is(PEG4dGrammar.PCatch)) {
+			return loading.newCatch();
 		}
 //		if(pego.is("PExport")) {
 //		Peg seq = toParsingExpression(loadingGrammar, ruleName, pego.get(0));
@@ -801,12 +858,9 @@ class PEG4dGrammar extends Grammar {
 	private PExpression Link(PExpression e) {
 		return new PConnector(this, 0, e, -1);
 	}
+	
 	private PExpression Link(int index, PExpression e) {
 		return new PConnector(this, 0, e, index);
-	}
-	
-	private PExpression Deprecated(String msg, PExpression e) {
-		return this.newDeprecated(msg, e);
 	}
 	
 	public Grammar loadPEG4dGrammar() {
@@ -897,31 +951,55 @@ class PEG4dGrammar extends Grammar {
 			Spacing,
 			ConstructorEnd
 		));
-//		PExpression _LazyFunc = Constructor(
-//			t("<lazy"), 
-//			_WS,
-//			set(n("NonTerminal_")),
-//			Spacing,
-//			t(">"),
-//			Tag("#PLazyNonTerminal")
-//		);
 		PExpression _MatchFunc = Constructor(
 			t("<match"), _S,
 			Link(P("Expr_")), Spacing, t(">"),
 			Tag(PMatch)
 		);
-		PExpression _DeprecatedFunc = Constructor(
-			t("<deprecated"), _S, Link(P("SingleQuotedString")), _S,
-			Link(P("Expr_")), Spacing, t(">"),
-			Tag(PDeprecated)
+		PExpression _IndentFunc = Constructor(
+			t("<indent"), 
+			Optional(Sequence(_S, Link(P("Expr_")), Spacing)), t(">"),
+			Tag(PIndent)
 		);
+		setRule(
+			"Flag_", 
+			Sequence(t("."), 
+				Constructor(one(_W), Tag(PFlag)) 
+			)
+		);
+		PExpression _EnableFlagFunc = Constructor(
+			t("<enable"), _S,
+			Link(P("Flag_")), _S,
+			Link(P("Expr_")), Spacing, t(">"),
+			Tag(PEnable)
+		);
+		PExpression _DisableFlagFunc = Constructor(
+			t("<disable"), _S,
+			Link(P("Flag_")), _S,
+			Link(P("Expr_")), Spacing, t(">"),
+			Tag(PDisable)
+		);
+		PExpression _DebugFunc = Constructor(
+			t("<debug"), _S,
+			Link(P("Expr_")), Spacing, t(">"),
+			Tag(PDebug)
+		);
+		PExpression _FailFunc = Constructor(
+			t("<fail"), _S, Link(P("SingleQuotedString")), Spacing, t(">"), Tag(PFail)
+		);
+		PExpression _CatchFunc = Constructor(
+			t("<catch>"), Tag(PCatch)
+		);
+		
 		setRule("Term_", 
 			Choice(
-				P("SingleQuotedString"), P("Charcter_"), _Any, _Message, _Tagging, _Byte, _Unicode,
+				P("SingleQuotedString"), P("Charcter_"), P("Flag_"), 
+				_Any, _Message, _Tagging, _Byte, _Unicode,
 				Sequence(t("("), Spacing, P("Expr_"), Spacing, t(")")),
 				P("Constructor_"), P("NonTerminal_"), 
 				P("String"), 
-				/*_LazyFunc,*/ _MatchFunc, _DeprecatedFunc
+				_MatchFunc, _EnableFlagFunc, _DisableFlagFunc, _IndentFunc,
+				_DebugFunc, _FailFunc, _CatchFunc
 			)
 		);
 		this.setRule("SuffixTerm_", Sequence(
@@ -950,7 +1028,7 @@ class PEG4dGrammar extends Grammar {
 				), 
 				P("SuffixTerm_")
 		));
-		PExpression _notRule = Not(Choice(
+		PExpression _NotRule = Not(Choice(
 				P("Rule_"), 
 				P("Import_")
 		));
@@ -960,7 +1038,7 @@ class PEG4dGrammar extends Grammar {
 					LeftJoin(
 						one(
 							Spacing, 
-							_notRule,
+							_NotRule,
 							Link(P("Predicate_"))
 						),
 						Tag(PSequence) 

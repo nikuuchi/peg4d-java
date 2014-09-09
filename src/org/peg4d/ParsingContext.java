@@ -1,5 +1,7 @@
 package org.peg4d;
 
+import java.util.HashMap;
+
 import org.peg4d.MemoMap.ObjectMemo;
 
 public class ParsingContext {
@@ -72,16 +74,12 @@ public class ParsingContext {
 		this.pos = pos;
 	}
 
-	public long fpos = 0;
+	long fpos = 0;
+	Object errorInfo = null;
 	
 	public final boolean isFailure() {
 		return this.left == null;
 	}
-
-//	final ParsingObject foundFailure(PExpression e) {
-//		this.opFailure();
-//		return this.left;
-//	}
 	
 	final long rememberFailure() {
 		return this.fpos;
@@ -229,6 +227,39 @@ public class ParsingContext {
 		this.memoMap.setMemo(keypos, e, po, length);
 	}
 
+	public final void opRememberPosition() {
+		lpush(this.pos);
+	}
+
+	public final void opCommitPosition() {
+		lpop();
+	}
+
+	public final void opBacktrackPosition() {
+		lpop();
+		rollback(this.lstack[this.lstacktop]);
+	}
+	
+	public final void opRememberSequencePosition() {
+		lpush(this.pos);
+		lpush(this.markObjectStack());
+		opush(this.left);
+	}
+
+	public final void opCommitSequencePosition() {
+		opop();
+		lpop();
+		lpop();
+	}
+
+	public final void opBackTrackSequencePosition() {
+		this.left = opop();
+		lpop();
+		this.abortLinkLog((int)this.lstack[this.lstacktop]);
+		lpop();
+		this.rollback(this.lstack[this.lstacktop]);
+	}
+
 	public final void opFailure() {
 		if(this.pos >= fpos) {  // adding error location
 			this.fpos = this.pos;
@@ -236,6 +267,68 @@ public class ParsingContext {
 		this.left = null;
 	}
 
+	HashMap<Long, Object> errorMap = new HashMap<Long, Object>();
+	private void setErrorInfo(Object errorInfo) {
+		Long key = this.pos;
+		if(!this.errorMap.containsKey(key)) {
+			this.errorMap.put(key, errorInfo);
+		}
+	}
+
+	private void removeErrorInfo() {
+		Long key = this.pos;
+		this.errorMap.remove(key);
+	}
+
+	private String getErrorMessage() {
+		Object errorInfo = this.errorMap.get(this.fpos);
+		if(errorInfo == null) {
+			return "syntax error";
+		}
+		if(errorInfo instanceof PExpression) {
+			return "syntax error: unrecognized " + errorInfo;
+		}
+		return errorInfo.toString();
+	}
+	
+	public final void opFailure(PExpression errorInfo) {
+		if(this.pos >= fpos) {  // adding error location
+			this.fpos = this.pos;
+			this.setErrorInfo(errorInfo);
+		}
+		this.left = null;
+	}
+
+	public final void opFailure(String errorInfo) {
+		if(this.pos >= fpos) {  // adding error location
+			this.fpos = this.pos;
+			this.setErrorInfo(errorInfo);
+		}
+		this.left = null;
+	}
+
+	public final void opRememberFailurePosition() {
+		lpush(this.fpos);
+	}
+
+	public final void opUpdateFailurePosition() {
+		lpop();
+	}
+
+	public final void opForgetFailurePosition() {
+		lpop();
+		this.fpos = this.lstack[this.lstacktop];
+	}
+	
+	public final void opCatch() {
+		if(this.canTransCapture()) {
+			this.left.setSourcePosition(this.fpos);
+			this.left.setValue(this.getErrorMessage());
+		}
+	}
+
+	
+	
 	public final void opMatchText(byte[] t) {
 		if(this.source.match(this.pos, t)) {
 			this.consume(t.length);
@@ -310,51 +403,6 @@ public class ParsingContext {
 		this.consume(consume);
 	}
 
-	public final void opRememberPosition() {
-		lpush(this.pos);
-	}
-
-	public final void opCommitPosition() {
-		lpop();
-	}
-
-	public final void opBacktrackPosition() {
-		lpop();
-		rollback(this.lstack[this.lstacktop]);
-	}
-
-	public final void opRememberSequencePosition() {
-		lpush(this.pos);
-		lpush(this.markObjectStack());
-		opush(this.left);
-	}
-
-	public final void opCommitSequencePosition() {
-		opop();
-		lpop();
-		lpop();
-	}
-
-	public final void opBackTrackSequencePosition() {
-		this.left = opop();
-		lpop();
-		this.abortLinkLog((int)this.lstack[this.lstacktop]);
-		lpop();
-		this.rollback(this.lstack[this.lstacktop]);
-	}
-
-	public final void opRememberFailurePosition() {
-		lpush(this.fpos);
-	}
-
-	public final void opUpdateFailurePosition() {
-		lpop();
-	}
-
-	public final void opForgetFailurePosition() {
-		lpop();
-		this.fpos = this.lstack[this.lstacktop];
-	}
 
 	public final void opStoreObject() {
 		this.opush(this.left);
@@ -409,6 +457,40 @@ public class ParsingContext {
 		this.opRestoreObjectIfFailure();
 	}
 
+	private HashMap<String,Boolean> flagMap = new HashMap<String,Boolean>();
+	
+	public final void setFlag(String flagName, boolean flag) {
+		this.flagMap.put(flagName, flag);
+	}
+	
+	private final boolean isFlag(Boolean f) {
+		return f == null || f.booleanValue();
+	}
+	
+	public final void opEnableFlag(String flag) {
+		Boolean f = this.flagMap.get(flag);
+		lpush(isFlag(f) ? 1 : 0);
+		this.flagMap.put(flag, true);
+	}
+
+	public final void opDisableFlag(String flag) {
+		Boolean f = this.flagMap.get(flag);
+		lpush(isFlag(f) ? 1 : 0);
+		this.flagMap.put(flag, false);
+	}
+
+	public final void opPopFlag(String flag) {
+		lpop();
+		this.flagMap.put(flag, (this.lstack[lstacktop] == 1) ? true : false);
+	}
+
+	public final void opCheckFlag(String flag) {
+		Boolean f = this.flagMap.get(flag);
+		if(!isFlag(f)) {
+			this.opFailure();
+		}
+	}
+	
 	public void opNewObject(PConstructor e) {
 		if(this.canTransCapture()) {
 			lpush(this.markObjectStack());
@@ -455,19 +537,67 @@ public class ParsingContext {
 		}
 	}
 
-	public final void opIndent() {
-		byte[] indent = this.source.getIndentText(pos).getBytes();
-		this.opMatchText(indent);
+	// <indent Expr>  <indent>
+	
+	private class IndentStack {
+		String indent;
+		byte[] utf8;
+		IndentStack prev;
+		IndentStack(String indent, IndentStack prev) {
+			this.indent = indent;
+			this.utf8 = indent.getBytes();
+			this.prev = prev;
+		}
+		IndentStack pop() {
+			return this.prev;
+		}
+	}
+	
+	private IndentStack indentStack = null;
+	
+	public final void opPushIndent() {
+		String s = this.source.getIndentText(this.pos);
+		//System.out.println("Push indent: '"+s+"'");
+		this.indentStack = new IndentStack(s, this.indentStack);
 	}
 
-	public final void opDeprecated(String message) {
-		if(!this.isFailure()) {
-			System.out.println(source.formatErrorMessage("deprecated", this.pos, message));
+	public final void opPopIndent() {
+		this.indentStack = this.indentStack.pop();
+	}
+	
+	public final void opIndent() {
+		if(indentStack != null) {
+			this.opMatchText(indentStack.utf8);
+			//System.out.println("indent isFailure? " + this.isFailure() + " indent=" + indentStack.utf8.length + " '" + "'" + " left=" + this.left);
 		}
 	}
 	
 	public final ParsingObject getResult() {
 		return this.left;
+	}
+
+	public void opDebug(PExpression inner) {
+		this.opDropStoredObject();
+		ParsingObject left = this.ostack[ostacktop];
+		this.opUpdateFailurePosition();
+		long fpos = this.lstack[lstacktop];
+		this.opCommitPosition();
+		long pos = this.lstack[lstacktop];
+		if(this.isFailure()) {
+			System.out.println(source.formatPositionLine("debug", this.pos, "failure in " + inner));
+			return;
+		}
+		if(this.left != left) {
+			System.out.println(source.formatPositionLine("debug", pos,
+				"transition #" + this.left.getTag() + " => #" + left.getTag() + " in " + inner));
+			return;
+		}
+		if(this.pos != pos) {
+			System.out.println(source.formatPositionMessage("debug", pos,
+				"consumed pos=" + pos + " => " + this.pos + " in " + inner));
+			return;
+		}
+		System.out.println(source.formatPositionLine("debug", pos, "pass in " + inner));
 	}
 
 

@@ -5,7 +5,7 @@ import java.util.HashMap;
 import org.peg4d.vm.MachineInstruction;
 import org.peg4d.vm.Opcode;
 
-class GrammarFormatter extends ParsingVisitor {
+class GrammarFormatter extends ParsingExpressionVisitor {
 	protected StringBuilder sb = null;
 	public GrammarFormatter() {
 		this.sb = null;
@@ -93,7 +93,7 @@ class GrammarFormatter extends ParsingVisitor {
 		sb.append("`" + e.symbol + "`");
 	}
 	@Override
-	public void visitIndent(PIndent e) {
+	public void visitIndent(ParsingIndent e) {
 		sb.append("indent");
 	}
 	protected void format(String prefix, PUnary e, String suffix) {
@@ -210,6 +210,33 @@ class GrammarFormatter extends ParsingVisitor {
 			e.inner.visit(this);
 		}
 	}
+	
+	@Override
+	public void visitParsingFlag(ParsingFlag e) {
+		sb.append(".");
+		sb.append(e.flagName);
+	}
+	
+	@Override
+	public void visitParsingEnableFlag(ParsingEnableFlag e) {
+		sb.append("<enable ");
+		sb.append(".");
+		sb.append(e.flagName);
+		sb.append(" ");
+		e.inner.visit(this);
+		sb.append(">");
+	}
+	
+	@Override
+	public void visitParsingDisableFlag(ParsingDisableFlag e) {
+		sb.append("<disable ");
+		sb.append(".");
+		sb.append(e.flagName);
+		sb.append(" ");
+		e.inner.visit(this);
+		sb.append(">");
+	}
+
 }
 
 class CodeGenerator extends GrammarFormatter {
@@ -305,7 +332,7 @@ class CodeGenerator extends GrammarFormatter {
 		this.writeCode(MachineInstruction.opValue, ParsingCharset.quoteString('\'', e.symbol, '\''));
 	}
 	@Override
-	public void visitIndent(PIndent e) {
+	public void visitIndent(ParsingIndent e) {
 		this.writeCode(MachineInstruction.opIndent);
 	}
 	@Override
