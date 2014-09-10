@@ -7,19 +7,22 @@ import org.peg4d.ext.Generator;
 
 public class CSourceGenerator extends Generator implements CTags {
 
+	private IndentManager indent;
+
 	public CSourceGenerator(String outputFileName) {
 		super(outputFileName);
+		indent = new IndentManager();
 	}
 
 	public void writeC(ParsingObject pego) {
-		System.out.println(pego);
+		//System.out.println(pego);
 		this.dispatch(pego);
 		this.close();
 	}
 
-	protected void dispatch(ParsingObject po) {
+	protected void dispatch(ParsingObject pego) {
 		Method m = null;
-		String name = "gen" + po.getTag().toString();
+		String name = "gen" + pego.getTag().toString();
 		try {
 			m = this.getClass().getDeclaredMethod(name, ParsingObject.class);
 		} catch (NoSuchMethodException e) {
@@ -29,7 +32,7 @@ public class CSourceGenerator extends Generator implements CTags {
 		}
 		if(m != null) {
 			try {
-				m.invoke(this, po);
+				m.invoke(this, pego);
 			} catch (IllegalAccessException e) {
 				e.printStackTrace();
 			} catch (IllegalArgumentException e) {
@@ -44,392 +47,593 @@ public class CSourceGenerator extends Generator implements CTags {
 	public void genSource(ParsingObject pego) {
 		for(int i = 0; i < pego.size(); i++) {
 			ParsingObject p = pego.get(i);
-			this.dispatch(p);
+			if(!Is(p, "ExpressionStatement")) {
+				this.dispatch(p);
+			}
 		}
 	}
 
 	private void createAnnotation(ParsingObject annotations) {
-		if(annotations.size() > 0) {
-			this.write(" ");
-		}
-		for(int i = 0; i < annotations.size(); i++) {
-			ParsingObject annotation = annotations.get(i);
-			this.dispatch(annotation);
+		if(annotations.size() == 0) {
+		} else {
+			for(int i = 0; i < annotations.size(); i++) {
+				ParsingObject annotation = annotations.get(i);
+				this.dispatch(annotation);
+				this.write(" ");
+			}
 		}
 	}
 
 	private void createParameters(ParsingObject params) {
 		this.write("(");
-		for(int i = 0; i < params.size(); i++) {
+		int size = params.size() - 1;
+		for(int i = 0; i < size; i++) {
 			ParsingObject param = params.get(i);
 			this.dispatch(param);
+			this.write(", ");
+		}
+		if(size >= 0) {
+			this.dispatch(params.get(size));
 		}
 		this.write(")");
 	}
 
 	@Override
 	public void genFunction(ParsingObject pego) {
-		this.createAnnotation(pego.get(0));
-		this.dispatch(pego.get(1));
+		this.createAnnotation(pego.get(0)); //Anno
+		this.dispatch(pego.get(1)); //Return type
 		this.write(" ");
-		this.dispatch(pego.get(2));
+		this.dispatch(pego.get(2)); //Name
 
-		this.createParameters(pego.get(3));
+		if(isMessage(pego.get(3)) && isMessage(pego.get(5)) && pego.get(4).size() == 0) {
+			this.write(";\n");
+			return;
+		}
 
-		this.dispatch(pego.get(4));
+		this.dispatchWithoutEmpty(pego.get(3)); //(
+		this.createParameters(pego.get(4)); //Params
+		if(pego.size() == 5) {
+			this.write(";\n");
+			return;
+		}
+		this.dispatchWithoutEmpty(pego.get(5)); //)
+
+		if(pego.size() > 6) {
+			this.dispatchWithoutEmpty(pego.get(6)); //Block or ; or Empty
+			if(!Is(pego.get(6), "Block")) {
+				this.write(";");
+			}
+			this.write("\n");
+		} else {
+			this.write(";\n");
+		}
 	}
 
 	@Override
 	public void genTypeDeclaration(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("typedef ");
+		this.dispatch(pego.get(0));
+		this.write(" ");
+		this.dispatch(pego.get(1));
+		this.write(";\n");
 	}
 
 	@Override
 	public void genVarDecl(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.dispatch(pego.get(0));
+		if(pego.size() > 1) {
+			this.write(" = ");
+			this.dispatch(pego.get(1));
+		}
 	}
 
 	@Override
 	public void genDesignation(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("Designation");
 	}
 
 	@Override
 	public void genTInt(ParsingObject pego) {
-		this.write("int");
+		this.write(pego.getText());
 	}
 
 	@Override
 	public void genTStruct(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("struct ");
+		this.dispatch(pego.get(0));
+		if(pego.size() == 1) {
+			return;
+		}
+		this.write(" {\n");
+		indent.indent();
+		for(int i = 1; i < pego.size(); i++) {
+			this.write(indent.getIndentString());
+			this.dispatch(pego.get(i));
+			this.write("\n");
+		}
+		indent.dedent();
+		this.write("}");
 	}
 
 	@Override
 	public void genTUnion(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("union");
+		this.write("union");
 	}
 
 	@Override
 	public void genTConst(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("const ");
+		this.dispatch(pego.get(0));
+		if(pego.size() > 1) {
+			this.dispatch(pego.get(1));
+		}
 	}
 
 	@Override
 	public void genTFunc(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("TFunc");
+		this.write("/*function*/");
 	}
 
 	@Override
 	public void genTVoid(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("void");
 	}
 
 	@Override
 	public void genTPointer(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		if(pego.size() == 0) {
+			this.write("* ");
+			return;
+		}
+		this.dispatch(pego.get(0));
+		this.write("*");
 	}
 
 	@Override
 	public void genTEnum(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("TEnum");
 	}
 
 	@Override
 	public void genTBoolean(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("TBoolean");
 	}
 
 	@Override
 	public void genTComplex(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("TComplex");
 	}
 
 	@Override
 	public void genTName(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write(pego.getText());
 	}
 
 	@Override
 	public void genBit(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("Bit");
 	}
 
 	@Override
 	public void genList(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		System.out.println("No longer need it");
 	}
 
 	@Override
 	public void genBlock(ParsingObject pego) {
 		this.write("{\n");
+		indent.indent();
 		for(int i = 0; i < pego.size(); i++) {
+			this.write(indent.getIndentString());
 			ParsingObject p = pego.get(i);
 			this.dispatch(p);
 			this.write("\n");
 		}
+		indent.dedent();
+		this.write(indent.getIndentString());
 		this.write("}");
+	}
+
+	private boolean isMessage(ParsingObject pego) {
+		return pego.getTag().toString().equals("Message");
+	}
+
+	private void createWhileBlock(ParsingObject pego, int i) {
+		if(isMessage(pego.get(i))) {
+			this.dispatch(pego.get(i));
+			this.write(")");
+			this.dispatch(pego.get(i+1));
+		} else {
+			this.write(")");
+			this.dispatch(pego.get(i));
+		}
 	}
 
 	@Override
 	public void genIf(ParsingObject pego) {
 		this.write("if(");
-		this.dispatch(pego.get(0));
+		this.dispatchWithoutEmpty(pego.get(0)); //(
+		this.dispatchWithoutEmpty(pego.get(1)); //Cond
+		this.dispatchWithoutEmpty(pego.get(2)); //)
 		this.write(")");
-		this.dispatch(pego.get(1));
-		if(pego.size() > 2) {
-			this.write(" else ");
-			this.dispatch(pego.get(2));
+		if(!Is(pego.get(3), "Block")) {
+			this.write("\n");
+			indent.indent();
+			this.write(indent.getIndentString());
 		}
+
+		this.dispatchWithoutEmpty(pego.get(3)); //Block
+
+		if(!Is(pego.get(3), "Block")) {
+			this.indent.dedent();
+		}
+		if(pego.size() == 4) {
+			return;
+		}
+		if(!Is(pego.get(3), "Block")) {
+			this.write("\n");
+			this.write(indent.getIndentString());
+		}
+
+		this.write("else");
+
+		if(!Is(pego.get(3), "Block")) {
+			this.write("\n");
+			indent.indent();
+			this.write(indent.getIndentString());
+		}
+		this.dispatch(pego.get(4));
+		if(!Is(pego.get(3), "Block")) {
+			this.indent.dedent();
+		}
+	}
+
+	private boolean Is(ParsingObject parsingObject, String string) {
+		return parsingObject.getTag().toString().equals(string);
 	}
 
 	@Override
 	public void genWhile(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("while(");
+		if(isMessage(pego.get(0))) {
+			this.dispatch(pego.get(0));
+			this.dispatch(pego.get(1));
+			this.createWhileBlock(pego, 2);
+		} else {
+			this.dispatch(pego.get(0));
+			this.createWhileBlock(pego, 1);
+		}
 	}
 
 	@Override
 	public void genDoWhile(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("do");
+		this.dispatch(pego.get(0)); //Block
+		this.write("while(");
+		this.dispatchWithoutEmpty(pego.get(1)); // (
+		this.dispatch(pego.get(2)); //Cond
+		if(pego.size() > 3) {
+			this.dispatchWithoutEmpty(pego.get(3)); // )
+		}
+		this.write(");\n");
 	}
 
 	@Override
 	public void genFor(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("for(");
+		this.dispatchWithoutEmpty(pego.get(0)); // (
+		this.dispatchWithoutEmpty(pego.get(1)); // Cond1
+		if(!tagIs(pego.get(1), "Declaration")) {
+			this.write(";");
+		}
+		this.dispatchWithoutEmpty(pego.get(2));
+		this.dispatchWithoutEmpty(pego.get(3));
+		this.write(";");
+		this.dispatchWithoutEmpty(pego.get(4));
+		this.dispatchWithoutEmpty(pego.get(5));
+		this.write(")");
+		this.dispatchWithoutEmpty(pego.get(6));
+		this.dispatchWithoutEmpty(pego.get(7));
+	}
+
+	private boolean tagIs(ParsingObject pego, String tagName) {
+		return pego.getTag().toString().equals(tagName);
+	}
+
+	private void dispatchWithoutEmpty(ParsingObject pego) {
+		if(!isEmpty(pego)) {
+			this.dispatch(pego);
+		}
+	}
+
+	private boolean isEmpty(ParsingObject pego) {
+		return pego.getTag().toString().equals("#empty");
 	}
 
 	@Override
 	public void genGoto(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("goto ");
+		this.dispatch(pego.get(0));
+		this.write(";\n");
 	}
 
 	@Override
 	public void genContinue(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("continue;");
+		if(pego.size() > 0) {
+			this.dispatch(pego.get(0));
+		}
 	}
 
 	@Override
 	public void genBreak(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("break;");
+		if(pego.size() > 0) {
+			this.dispatch(pego.get(0));
+		}
 	}
 
 	@Override
 	public void genReturn(ParsingObject pego) {
-		this.write("return ");
-		this.dispatch(pego.get(0));
-		this.write(";");
+		this.write("return");
+		if(pego.size() == 0) {
+			this.write(";");
+			return;
+		}
+		ParsingObject exprOrMessage = pego.get(0);
+		if(exprOrMessage.getTag().toString().equals("Message")) {
+			this.write(";");
+			this.dispatch(exprOrMessage);
+		} else {
+			this.write(" ");
+			this.dispatch(exprOrMessage);
+			this.write(";");
+			if(pego.size() > 1) {
+				this.dispatch(pego.get(1));
+			}
+		}
 	}
 
 	@Override
 	public void genSwitch(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("switch(");
+		this.dispatchWithoutEmpty(pego.get(0)); // (
+		this.dispatchWithoutEmpty(pego.get(1)); // Cond
+		this.dispatchWithoutEmpty(pego.get(2)); // )
+		this.write(")");
+		this.dispatchWithoutEmpty(pego.get(3)); // Block
+		this.write("\n");
 	}
 
 	@Override
 	public void genSwitchCase(ParsingObject pego) {
-		// TODO Auto-generated method stub
+		this.write("case ");
+		this.dispatchWithoutEmpty(pego.get(0)); // case
+		this.write(":\n");
+		indent.indent();
+		for(int i = 1; i < pego.size(); i++) {
+			this.write(indent.getIndentString());
+			this.dispatchWithoutEmpty(pego.get(i));
+			if(i < pego.size() - 1) {
+				this.write("\n");
+			}
+		}
+		indent.dedent();
 		
 	}
 
 	@Override
 	public void genSwitchDefault(ParsingObject pego) {
-		// TODO Auto-generated method stub
+		this.write("default:\n");
+		indent.indent();
+		for(int i = 0; i < pego.size(); i++) {
+			this.write(indent.getIndentString());
+			this.dispatchWithoutEmpty(pego.get(i));
+			if(i < pego.size() - 1) {
+				this.write("\n");
+			}
+		}
+		indent.dedent();
 		
 	}
 
 	@Override
-	public void genLabelBlock(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+	public void genLabel(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write(":\n");
 	}
 
 	@Override
 	public void genEmpty(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		// Do nothing
 	}
 
 	@Override
 	public void genAssign(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " = ");
 	}
 
 	@Override
 	public void genAssignMul(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " *= ");
 	}
 
 	@Override
 	public void genAssignDiv(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " /= ");
 	}
 
 	@Override
 	public void genAssignMod(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " %= ");
 	}
 
 	@Override
 	public void genAssignAdd(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " += ");
 	}
 
 	@Override
 	public void genAssignSub(ParsingObject pego) {
-		// TODO Auto-generated method stub
+		this.createBinaryExpression(pego, " -= ");
 		
 	}
 
 	@Override
 	public void genAssignLeftShift(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " <<= ");
 	}
 
 	@Override
 	public void genAssignRightShift(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " >>= ");
 	}
 
 	@Override
 	public void genAssignBitwiseAnd(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " &= ");
 	}
 
 	@Override
 	public void genAssignBitwiseOr(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " |= ");
 	}
 
 	@Override
 	public void genAssignBitwiseXOr(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.createBinaryExpression(pego, " ^= ");
 	}
 
 	@Override
 	public void genPrefixInc(ParsingObject pego) {
-		// TODO Auto-generated method stub
+		this.write("++");
+		this.dispatch(pego.get(0));
 		
 	}
 
 	@Override
 	public void genPrefixDec(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("--");
+		this.dispatch(pego.get(0));
 	}
 
 	@Override
 	public void genAddress(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("&");
+		this.dispatch(pego.get(0));
 	}
 
 	@Override
 	public void genStar(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("*");
+		this.dispatch(pego.get(0));
 	}
 
 	@Override
 	public void genPlus(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("+");
+		this.dispatch(pego.get(0));
 	}
 
 	@Override
 	public void genMinus(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("-");
+		this.dispatch(pego.get(0));
 	}
 
 	@Override
 	public void genCompl(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("~");
+		this.dispatch(pego.get(0));
 	}
 
 	@Override
 	public void genNot(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("!");
+		this.dispatch(pego.get(0));
 	}
 
 	@Override
 	public void genSizeOf(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("sizeof(");
+		this.dispatch(pego.get(0));
+		this.write(")");
 	}
 
 	@Override
 	public void genCast(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.write("(");
+		this.dispatch(pego.get(0));
+		this.write(")");
+		this.dispatch(pego.get(1));
 	}
 
 	@Override
 	public void genField(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.dispatch(pego.get(0));
+		this.write(".");
+		this.dispatch(pego.get(1));
 	}
 
 	@Override
 	public void genInc(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.dispatch(pego.get(0));
+		this.write("++");
 	}
 
 	@Override
 	public void genDec(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.dispatch(pego.get(0));
+		this.write("--");
 	}
 
 	@Override
 	public void genIndex(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.dispatch(pego.get(0));
+		this.write("[");
+		this.dispatch(pego.get(1));
+		this.write("]");
 	}
 
 	@Override
 	public void genApply(ParsingObject pego) {
-		// TODO Auto-generated method stub
-		
+		this.dispatch(pego.get(0));
+		ParsingObject params = pego.get(1);
+		this.write("(");
+		if(params.size() > 0) {
+			this.dispatch(params.get(0));
+		}
+		for(int i = 1; i < params.size(); i++) {
+			ParsingObject param = params.get(i);
+			if(!isMessage(param)) {
+				this.write(", ");
+			}
+			this.dispatch(params.get(i));
+		}
+		this.write(")");
 	}
 
 	@Override
 	public void genDeclaration(ParsingObject pego) {
-		this.dispatch(pego.get(0));
+		this.createAnnotation(pego.get(0));
 		this.dispatch(pego.get(1));
+		this.write(" ");
+		this.dispatch(pego.get(2));
+		if(pego.size() <= 3) {
+			this.write(";");
+		} else {
+			for(int i = 3; i < pego.size(); i++) {
+				if(isMessage(pego.get(i))) {
+					this.dispatch(pego.get(i));
+				} else {
+					this.write(", ");
+					this.dispatch(pego.get(i));
+				}
+			}
+			this.write(";");
+		}
 	}
 
 	@Override
@@ -451,6 +655,225 @@ public class CSourceGenerator extends Generator implements CTags {
 	@Override
 	public void genLessThan(ParsingObject pego) {
 		this.createBinaryExpression(pego, " < ");
+	}
+
+	@Override
+	public void genLessThanEquals(ParsingObject pego) {
+		this.createBinaryExpression(pego, " <= ");
+	}
+
+	@Override
+	public void genMessage(ParsingObject pego) {
+		this.write(" /*" + pego.getText() + "*/");
+	}
+
+	@Override
+	public void genMul(ParsingObject pego) {
+		this.createBinaryExpression(pego, " * ");
+	}
+
+	@Override
+	public void genDiv(ParsingObject pego) {
+		this.createBinaryExpression(pego, " / ");
+	}
+
+	@Override
+	public void genMod(ParsingObject pego) {
+		this.createBinaryExpression(pego, " % ");
+	}
+
+	@Override
+	public void genAdd(ParsingObject pego) {
+		this.createBinaryExpression(pego, " + ");
+	}
+
+	@Override
+	public void genSub(ParsingObject pego) {
+		this.createBinaryExpression(pego, " - ");
+	}
+
+	@Override
+	public void genExpressionStatement(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write(";");
+		if(pego.size() > 1) {
+			this.dispatch(pego.get(1));
+		}
+		this.write("\n");
+	}
+
+	@Override
+	public void genStructMemberDeclaration(ParsingObject pego) {
+		this.createAnnotation(pego.get(0));
+		this.dispatch(pego.get(1));
+		this.write(" ");
+		this.dispatch(pego.get(2));
+		for(int i = 3; i < pego.size(); i++) {
+			this.write(", ");
+			this.dispatch(pego.get(i));
+		}
+		this.write(";");
+	}
+
+	@Override
+	public void genParam(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write(" ");
+		this.dispatch(pego.get(1));
+	}
+
+	@Override
+	public void genPointerName(ParsingObject pego) {
+		this.write("*");
+		this.dispatch(pego.get(0));
+	}
+
+	@Override
+	public void genArrayName(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write("[");
+		if(pego.size() > 1) {
+			this.dispatch(pego.get(1));
+		}
+		this.write("]");
+	}
+
+	@Override
+	public void genInitializer(ParsingObject pego) {
+		this.write("{");
+		this.dispatch(pego.get(0));
+		this.write("}");
+	}
+
+	@Override
+	public void genStructDeclaration(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write(";\n");
+	}
+
+	@Override
+	public void genString(ParsingObject pego) {
+		this.write("\"");
+		this.write(pego.getText());
+		this.write("\"");
+	}
+
+	@Override
+	public void genEquals(ParsingObject pego) {
+		this.createBinaryExpression(pego, " == ");
+	}
+
+	@Override
+	public void genExpression(ParsingObject pego) {
+		this.createBinaryExpression(pego, " , ");
+	}
+
+	@Override
+	public void genInclude(ParsingObject pego) {
+		this.write("#include");
+		this.write(pego.getText());
+		this.write("\n");
+	}
+
+	@Override
+	public void genDefine(ParsingObject pego) {
+		this.write("#define ");
+		this.write(pego.getText());
+		this.write("\n");
+	}
+
+	@Override
+	public void genGreaterThanEquals(ParsingObject pego) {
+		this.createBinaryExpression(pego, " >= ");
+	}
+
+	@Override
+	public void genGreaterThan(ParsingObject pego) {
+		this.createBinaryExpression(pego, " > ");
+	}
+
+	@Override
+	public void genDeclarationStatement(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write("\n");
+	}
+
+	@Override
+	public void genOr(ParsingObject pego) {
+		this.createBinaryExpression(pego, " || ");
+	}
+
+	@Override
+	public void genAnd(ParsingObject pego) {
+		this.createBinaryExpression(pego, " && ");
+	}
+
+	@Override
+	public void genPointerField(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write("->");
+		this.dispatch(pego.get(1));
+	}
+
+	@Override
+	public void genNotEquals(ParsingObject pego) {
+		this.createBinaryExpression(pego, " != ");
+	}
+
+	@Override
+	public void genKeyValue(ParsingObject pego) {
+		this.write(pego.get(0).getText());
+	}
+
+	@Override
+	public void genCharacter(ParsingObject pego) {
+		this.write("'");
+		this.write(pego.getText());
+		this.write("'");
+	}
+
+	@Override
+	public void genTFloat(ParsingObject pego) {
+		this.write(pego.getText());
+	}
+
+	@Override
+	public void genBitwiseAnd(ParsingObject pego) {
+		this.createBinaryExpression(pego, " & ");
+	}
+
+	@Override
+	public void genBitwiseOr(ParsingObject pego) {
+		this.createBinaryExpression(pego, " | ");
+	}
+
+	@Override
+	public void genBitwiseXor(ParsingObject pego) {
+		this.createBinaryExpression(pego, " ^ ");
+	}
+
+	@Override
+	public void genFloat(ParsingObject pego) {
+		this.write(pego.getText());
+	}
+
+	@Override
+	public void genLeftShift(ParsingObject pego) {
+		this.createBinaryExpression(pego, " << ");
+	}
+
+	@Override
+	public void genRightShift(ParsingObject pego) {
+		this.createBinaryExpression(pego, " >> ");
+	}
+
+	@Override
+	public void genTrinary(ParsingObject pego) {
+		this.dispatch(pego.get(0));
+		this.write(" ? ");
+		this.dispatch(pego.get(1));
+		this.write(" : ");
+		this.dispatch(pego.get(2));
 	}
 
 }

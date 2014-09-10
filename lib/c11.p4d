@@ -23,16 +23,32 @@ export
 	/ CChar
 
 File
-	= _ { (@TopLevel)* #Source } EOT
+	= _ {
+			( @TopLevel
+			/ @{ @StructDecl @Semicolon #StructDeclaration }
+			/ @Statement
+			/ @Expression
+			/ @Type
+			/ _ )*
+		#Source } EOT
+
+AfterSemicolon
+	= TopLevel
+	/ StructDecl Semicolon
+	/ "}"
+	/ Statement
+	/ Expression
+	/ Type
+	/ _
 
 Chunk
 	= TopLevel
-	/ Expression
 	/ Statement
+	/ Expression
 	/ Type
 _
-	= (S / BLOCKCOMMENT / LINECOMMENT / PRAGMA)*
-	
+	= (S / BLOCKCOMMENT / LINECOMMENT )*
+
 S
 	= [ \n\r\t\u000B\u000C]
 
@@ -42,8 +58,8 @@ BLOCKCOMMENT
 LINECOMMENT
 	= '//' (!'\n' .)*
 
-PRAGMA
-	= '#' (!'\n' .)*
+//PRAGMA
+//	= '#' (!'\n' .)*
 
 ATTRIBUTE
 	= '__attribute__' !W _ '((' (!'))' .)* '))' _
@@ -101,9 +117,9 @@ KEYWORD
 "_Complex"   = '_Complex' !W
 "struct"    = 'struct'   !W _
 "union"     = 'union'    !W _
-"{"     = '{' _ ;
-"["      = '[' _ ;
-"]"      = ']' _ ;
+"{"     = '{' _
+"["      = '[' _
+"]"      = ']' _
 ","	  = ',' _
 "..."	= '...' _
 ":"	= ':' ![>] _
@@ -167,15 +183,35 @@ KEYWORD
 "("	= '(' _
 ")"	= ')' _
 
+"#"	= '#' _
+"include"	= 'include' !W _
+"define"	= 'define' !W _
+
+LBR
+	= "(" _
+	/ {`( not found` #Message }
+
+RBR
+	= ")" _ ")" (")" / _)+ { `too many )` #Message}
+	/ ")"
+	/ {`) not found` #Message }
+
 EOT	= !.
 
 TopLevel
 	= FunctionDefinition
-	/ Declaration
+	/ { @{ @AnnotationList @Type (@InitDeclAssign / @InitDecl ("," @InitDecl)+ )  ATTRIBUTE? @Semicolon #Declaration } #DeclarationStatement }
+	/ { @[0]AnnotationList @[1]Type @[2]Name @[3]LBR @[4]FunctionParamList @[5]RBR @[6]Semicolon #Function }
+	/ { @Declaration #DeclarationStatement }
 	/ TypeDef
+	/ Macro
+
+Macro
+	= "#" "include" { (!'\n' .)* #Include }
+	/ "#" "define"  { (!'\n' .)* #Define }
 
 FunctionDefinition
-	= { @AnnotationList @Type @Name "(" @FunctionParamList ")" @Block #Function }
+	= { @[0]AnnotationList @[1]Type @[2]Name @[3]LBR @[4]FunctionParamList @[5]RBR @[6]Block #Function }
 
 AnnotationList
 	= { (@Annotation)*  #List } _
@@ -191,26 +227,30 @@ Annotation
 	/ "_stdcall"  { #KeyValue @{`stdcall` #Key } @{`true` #Value } } _
 
 FunctionParamList
-	= { ( FunctionParam ("," FunctionParam)+ )? ("," "...")? #List } 
+	= { _ 'void' _ #List }
+	/ { ( @FunctionParam ("," @FunctionParam)* )? ("," "...")? #List } 
 
 FunctionParam
-	= { @Type _ @Name #Param} _
+	= { @Type _ @VarName #Param} _
 	
 // Declaration
 //==============
 
 TypeDef
-	= { "typedef" @Type @Name #TypeDeclaration } _ ";"
+	= { "typedef" @Type @Name _ @Semicolon #TypeDeclaration }
 
 Declaration
-	= { @AnnotationList @Type @InitDecl ("," @InitDecl)* #Declaration } ATTRIBUTE? ";"
+	= { @AnnotationList @Type @InitDecl ("," @InitDecl)*  ATTRIBUTE? @Semicolon #Declaration }
 
 InitDecl
 	= { @VarName ("=" @Initializer)? #VarDecl } _
 
+InitDeclAssign
+	= { @VarName "=" @Initializer #VarDecl } _
+
 VarName
 	= { "*" @VarName #PointerName } _
-	/ Name {@ "[" @ConstantExpression "]" #ArrayName}*
+	/ Name {@ "[" (@ConstantExpression)? "]" #ArrayName}*
 
 Initializer
 	= AssignmentExpression
@@ -231,20 +271,21 @@ Designator
 //====
 
 Type
-	= { "const" _ @TypeSuffix #TConst } _ / TypeSuffix 
+	= { "const" _ @TypeSuffix #TConst } _
+	/ TypeSuffix
 
 TypeSuffix
-	= PrimaryType {@ ("*" (POINTER_QUALIFIER)* #TPointer / "[" (NAME / DIGIT* ) _ "]" #TPointer / AddFuncType ) }*
+	= PrimaryType {@ ( POINTER_QUALIFIER @{ "*" #TPointer } #TConst / "*" (@POINTER_QUALIFIER)* #TPointer / "[" / (NAME / DIGIT*) "]" #TPointer / AddFuncType ) }*
 
 POINTER_QUALIFIER
 	= "const" / "restrict"
 
 AddFuncType
 	= "(" "*" @Name ")" "(" (@Type (_ NAME _)? ("," @Type (_ NAME _)? )* )? ")" #TFunc
-	
+
 PrimaryType
-	= { "struct" @Name AddStructMember?  #TStruct } _
-	/ { "union"  @Name  AddStructMember?  #TUnion } _
+	= StructDecl
+	/ { "union"  @Name AddStructMember?  #TUnion } _
 	/ { "enum"   @Name "{" @EnumeratorList ","? "}" #TEnum } _
 	/ { "void" #TVoid } _
 	/ { SIGN? "char"          #TInt } _
@@ -261,6 +302,9 @@ PrimaryType
 	/ { NAME_T #TName } _
 	/ { NAME   #Name } _
 
+StructDecl
+	= { "struct" @Name AddStructMember? #TStruct }
+
 SIGN
 	= ("signed" / "unsigned")
 
@@ -268,13 +312,13 @@ NAME_T
 	= !DIGIT (!('_t' !W)  W )+ '_t' !W
 	
 AddStructMember
-	= "{" (@StructDeclaration)+ "}"
+	= '{' _ (@StructDeclaration / _ )+ _ "}"
 
 StructDeclaration
-	= { @AnnotationList @Type StructMemberName  ("," @StructMemberName )* } _ ";"
+	= { @AnnotationList @Type @StructMemberName  ("," @StructMemberName )* @Semicolon _ #StructMemberDeclaration }
 
 StructMemberName
-	= VarName {@ ":" @ConstantExpression #Bit}
+	= VarName {@ ":" @ConstantExpression #Bit}*
 
 EnumeratorList
 	= { @Enumerator ("," @Enumerator)* ","? #List }
@@ -287,24 +331,29 @@ Enumerator
 //===================
 
 Block
-	= { "{" (@(Declaration / Statement))* "}" #Block }
+	= { "{" (@(Statement / { @Declaration #DeclarationStatement }))* "}" #Block }
+
+Semicolon
+	= ";"
+	/ [:,] &_ &AfterSemicolon { `Semicolon` #Message}
+	/ &_ &AfterSemicolon { `Semicolon` #Message}
 
 Statement
 	= Block
-	/ { "if"     "(" @Expression ")" @Statement ("else" @Statement)? #If }
-	/ { "switch" "(" @Expression ")" @Statement #Switch }
-	/ { "while"  "(" @Expression ")" @Statement #While }
-	/ { "do" @Statement "while" "(" @Expression ")" #DoWhile } ";"
-	/ { "for" "(" (@Expression)? ";" (@Expression^) ";" (@Expression)? ")" @Statement #For }
-	/ { "for" "(" @Declaration (@Expression)? ";" (@Expression)? ")" @Statement #For }
-	/ { "goto" Name #Goto } ";"
-	/ { "continue" #Continue } ";" 
-	/ { "break" #Break } ";" 
-	/ { "return" (@Expression)? #Return } ";" 
-	/ { "case" @ConstantExpression ":" @Statement #SwitchCase }
-	/ { "default" ":" @Statement #SwitchDefault }
-	/ { @Name ":" @Statement #LabelBlock }
-	/ Expression ";"
+	/ { "if"     @[0]LBR @[1]Expression @[2]RBR @[3]Statement ("else" @[4]Statement)? #If }
+	/ { "switch" @[0]LBR @[1]Expression @[2]RBR @[3]Statement #Switch }
+	/ { "while"  @LBR @Expression @RBR @Statement #While }
+	/ { "do" @[0]Statement "while" @[1]LBR @[2]Expression @[3]RBR @Semicolon #DoWhile }
+	/ { "for" @[0]LBR (@[1]Expression)? @[2]Semicolon (@[3]Expression)? @[4]Semicolon (@[5]Expression)? @[6]RBR @[7]Statement #For }
+	/ { "for" @[0]LBR @[1]Declaration (@[3]Expression)? @[4]Semicolon (@[5]Expression)? @[6]RBR @[7]Statement #For }
+	/ { "goto" @Name @Semicolon #Goto }
+	/ { "continue" @Semicolon #Continue }
+	/ { "break" @Semicolon #Break }
+	/ { "return" (@Expression)?  @Semicolon #Return }
+	/ { "case" @ConstantExpression ":" (!"case" !"default" @Statement)* #SwitchCase }
+	/ { "default" ":" (!"case" @Statement)* #SwitchDefault }
+	/ { @Name ":" #Label }
+	/ { @Expression @Semicolon #ExpressionStatement }
 	/ { #Empty } ";"
 
 
@@ -388,7 +437,7 @@ PostfixExpression
 	{@ (AddFunctionCall / AddIndex  / "." @Name #Field / "->" @Name #PointerField / "++" #Inc / "--" #Dec) }*
 
 AddFunctionCall
-	= "(" @{ AddArgumentExpressionList? #List} ")" #Apply
+	= @{ "(" AddArgumentExpressionList? @RBR #List} #Apply
 
 AddArgumentExpressionList
 	= (@AssignmentExpression ("," @AssignmentExpression)*)
@@ -491,128 +540,3 @@ OCTAL_ESCAPE
 	
 HEX_ESCAPE
 	= '\\x' HEX+
-	
-
-	
-	
-// ==========================================================================
-
-ExternalDeclaration
-	= FunctionDefinitionOrig
-	/ DeclarationOrig
-	
-FunctionDefinitionOrig
-	= { DeclarationSpecifiers^3 Declarator^0 (DeclarationList^1)? Block^2 #Function }
-
-DeclarationOrig
-	= DeclarationNoAttribute^ ((Assembler)^)? ";"
-
-DeclarationList
-	= Declaration+
-
-DeclarationNoAttribute
-	= DeclarationSpecifiers^ (InitDeclaratorList^)?
-	;
-InitDeclaratorList
-	= InitDeclarator^ ("," InitDeclarator^)*
-	;
-InitDeclarator
-	= { (Pointer^)? DirectDeclarator^ ("=" Initializer^)? #assign }
-	;
-Assembler
-	= "__asm" "(" (CString ("," CString)*)? ")"
-	;
-
-DeclarationSpecifiers
-	= (StorageClassSpecifier / TypeQualifier / FunctionSpecifier)* 
-	   TypedefName (StorageClassSpecifier / TypeQualifier / FunctionSpecifier)*
-	/ (StorageClassSpecifier / TypeSpecifier / TypeQualifier / FunctionSpecifier)+
-	
-StorageClassSpecifier
-	= "typedef" / "extern" / "static" / "auto" / "register"
-
-TypeQualifier
-	= "const"
-	/ "restrict"
-	/ "volatile"
-	/ "__declspec" "(" Name ")"
-
-FunctionSpecifier
-	= "inline"
-	/ "_stdcall"
-
-TypeName
-	= { SpecifierQualifierList^ (AbstractDeclarator^)? #c.typename }
-
-SpecifierQualifierList
-	= (TypeQualifier* TypedefName TypeQualifier*)^
-	/ ((TypeSpecifier / TypeQualifier)^)+
-	
-TypedefName
-	= { Name^ #c.typedefname }
-	;
-	
-TypeSpecifier
-	= { "void" #Tvoid }
-	/ { "char" #Tchar }
-	/ { "short" #Tshort }
-	/ { "int" #Tint }
-	/ { "long" #Tlong }
-	/ { "float" #Tfloat }
-	/ { "double" #Tdouble }
-	/ { "signed" #Tsigned }
-	/ { "unsigned" #Tunsigned }
-	/ { "_Bool" #Tbool }
-	/ { "_Complex" #Tcomplex }
-	/ { StructOrUnionSpecifier #Tstructorunion }
-
-StructOrUnionSpecifier
-	= StructOrUnion^ ( (Name^)? "{" (StructDeclaration^)+ "}" / Name^ )
-
-StructOrUnion
-	= { "struct" #c.struct }
-	/ { "union" #c.union }
-
-StructDeclaration
-	= { SpecifierQualifierList StructDeclaratorList^ ";" #c.structdeclaration }
-
-StructDeclaratorList
-	= { StructDeclarator ("," StructDeclarator)* #c.structdeclaratorlist }
-
-StructDeclarator
-	= (Declarator^)? ":" ConstantExpression^
-	/ Declarator^
-	;
-	
-Declarator
-	= (Pointer^)? DirectDeclarator^
-
-Pointer
-	= { ("*" (TypeQualifier^)*)+ #c.pointer }
-
-DirectDeclarator
-	= ( Name^ / "(" Declarator^ ")" ) ({ "[" (TypeQualifier^)* (AssignmentExpression^)? "]" #arraysize } / "[" "static"^ (TypeQualifier^)* AssignmentExpression^ "]" / "[" (TypeQualifier^)+ "static"^ AssignmentExpression^ "]" / "[" (TypeQualifier^)* "*"^ "]" / "(" ParameterTypeList^ ")" / "(" (NameList^)? ")")*
-	;
-ParameterTypeList
-	= ParameterList^ ("," "...")?
-	;
-ParameterList
-	= ParameterDeclaration {@ "," ParameterDeclaration^ #param }*
-	;
-ParameterDeclaration
-	= DeclarationSpecifiers {@ (Declarator / AbstractDeclarator)^ #c.parameterdeclaration }?
-	;
-AbstractDeclarator
-	= Pointer? DirectAbstractDeclarator
-	/ Pointer
-	;
-DirectAbstractDeclarator
-	= ( "(" AbstractDeclarator ")" / "[" (AssignmentExpression / "*")? "]" / "(" ParameterTypeList? ")" ) ("[" (AssignmentExpression / "*")? "]" / "(" ParameterTypeList? ")")*
-	;
-
-NameList
-	= { Name^ ("," Name^)* #c.identifierlist }
-	;
-
-
-	

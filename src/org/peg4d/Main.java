@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 import org.peg4d.ext.Generator;
 import org.peg4d.vm.SimpleVirtualMachine;
@@ -62,6 +63,8 @@ public class Main {
 	// --verbose:stat
 	public static int     StatLevel = -1;
 
+	public static boolean CTestMode = false;
+
 	// --static => false
 	public static String  ParserName = null;
 	public static boolean TracingMemo = true;
@@ -77,6 +80,10 @@ public class Main {
 
 	public final static void main(String[] args) {
 		parseCommandArguments(args);
+		if(CTestMode) {
+			Main.testExecute();
+			return;
+		}
 		if(FindFileIndex != -1) {
 			Grammar peg = new GrammarFactory().newGrammar("main");
 			for(int i = FindFileIndex; i < args.length; i++) {
@@ -113,6 +120,27 @@ public class Main {
 		}
 	}
 	
+	private static void testExecute() {
+		String CTestDir = "";
+		File testDir = new File(CTestDir + "/data");
+		File[] testFiles = testDir.listFiles();
+		Grammar peg = GrammarFile == null ? Grammar.PEG4d : new GrammarFactory().newGrammar("main", GrammarFile);
+		for(int i = 0; i < testFiles.length; i++) {
+			String FileName = testFiles[i].getAbsolutePath();
+			ParsingStream p = peg.newParserContext(Main.loadSource(peg, FileName));
+			ParsingObject pego = p.parse(StartingPoint);
+			if(p.isFailure()) {
+				p.showPosition("syntax error", p.fpos);
+				continue;
+			}
+			if(p.hasByteChar()) {
+				p.showPosition("unconsumed", p.pos);
+			}
+			new CSourceGenerator(String.format("%s/result/c_%04d.c", CTestDir, i)).writeC(pego);
+			System.out.println(i);
+		}
+	}
+
 	private static void parseCommandArguments(String[] args) {
 		int index = 0;
 		while (index < args.length) {
@@ -159,6 +187,9 @@ public class Main {
 			else if(argument.startsWith("--stat")) {
 				StatLevel = ParsingCharset.parseInt(argument.substring(6), 1);
 				OutputType = "none";
+			}
+			else if(argument.startsWith("--ctest")) {
+				CTestMode = true;
 			}
 			else if(argument.startsWith("--csv") && (index < args.length)) {
 				CSVFileName = args[index];
@@ -338,7 +369,7 @@ public class Main {
 		if(p.hasByteChar()) {
 			p.showPosition("unconsumed", p.pos);
 		}
-		System.out.println(OutputType);
+		//System.out.println(OutputType);
 		if(OutputType.equalsIgnoreCase("pego")) {
 			new Generator(OutputFileName).writePego(pego);
 		}
