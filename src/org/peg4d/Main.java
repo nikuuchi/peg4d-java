@@ -339,6 +339,7 @@ public class Main {
 			if(context.isFailure()) {
 				System.out.println(context.source.formatPositionLine("error", context.fpos, context.getErrorMessage()));
 				System.out.println(context.source.formatPositionLine("maximum matched", context.head_pos, ""));
+				context.dumpFail();
 				if(Main.DebugLevel > 0) {
 					System.out.println(context.maximumFailureTrace);
 				}
@@ -347,6 +348,7 @@ public class Main {
 			if(context.hasByteChar()) {
 				System.out.println(context.source.formatPositionLine("unconsumed", context.pos, ""));
 				System.out.println(context.source.formatPositionLine("maximum matched", context.head_pos, ""));
+				context.dumpFail();
 				if(Main.DebugLevel > 0) {
 					System.out.println(context.maximumFailureTrace);
 				}

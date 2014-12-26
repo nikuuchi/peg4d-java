@@ -15,7 +15,7 @@ public class ParsingByteRange extends ParsingExpression {
 		this.minlen = 1;
 	}
 	@Override 
-	ParsingExpression uniquefyImpl() { 
+	ParsingExpression uniquefyImpl() {
 		return ParsingExpression.uniqueExpression("[\b" + startByteChar + "-" + endByteChar, this);
 	}
 	@Override
@@ -43,6 +43,10 @@ public class ParsingByteRange extends ParsingExpression {
 			return true;
 		}
 		context.failure(this);
+		if(context.isSilentFail()) {
+			System.out.println(this.toString());
+			context.addSilentFail(this.toString());
+		}
 		return false;
 	}
 }

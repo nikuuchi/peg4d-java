@@ -34,7 +34,7 @@ public abstract class ParsingExpression extends ParsingMatcher {
 	public ParsingObject po      = null;
 	int           minlen = -1;
 	public ParsingMatcher  matcher;
-		
+
 	protected ParsingExpression() {
 		this.matcher = this;
 	}

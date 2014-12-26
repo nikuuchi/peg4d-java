@@ -1,6 +1,8 @@
 package org.peg4d;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.peg4d.expression.NonTerminal;
 import org.peg4d.expression.ParsingConstructor;
@@ -10,12 +12,43 @@ import org.peg4d.expression.ParsingMatcher;
 public class ParsingContext {
 	public ParsingSource source;
 	NezLogger    stat   = null;
-	
+	int choiceDepth = 0;
+	List<String> errorList;
+
+
 	public ParsingContext(ParsingSource s, long pos, int stacksize, MemoTable memo) {
 		this.left = null;
 		this.source = s;
 		this.resetSource(s, pos);
 		this.memoTable = memo != null ? memo : new NoMemoTable(0, 0);
+		this.errorList = new ArrayList<>();
+	}
+
+	public void inc() {
+		if(choiceDepth == 0) {
+			errorList.clear();
+		}
+		choiceDepth++;
+	}
+
+	public void dec() {
+		choiceDepth--;
+	}
+
+	public boolean isSilentFail() {
+		return choiceDepth != 0;
+	}
+
+	public void addSilentFail(String s) {
+		errorList.add(s);
+	}
+
+	public void dumpFail() {
+		System.out.println("s"+errorList.size());
+		for(String s: errorList) {
+			System.out.println(s);
+		}
+		System.out.println("s");
 	}
 
 	public ParsingContext(ParsingSource s) {

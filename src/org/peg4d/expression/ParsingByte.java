@@ -45,6 +45,9 @@ public class ParsingByte extends ParsingExpression {
 			return true;
 		}
 		context.failure(this);
+		if(context.isSilentFail()) {
+			context.addSilentFail(this.toString());
+		}
 		return false;
 	}
 }

@@ -60,14 +60,17 @@ public class ParsingChoice extends ParsingList {
 	public boolean simpleMatch(ParsingContext context) {
 		long f = context.rememberFailure();
 		ParsingObject left = context.left;
+		context.inc();
 		for(int i = 0; i < this.size(); i++) {
 			context.left = left;
 			if(this.get(i).matcher.simpleMatch(context)) {
 				context.forgetFailure(f);
 				left = null;
+				context.dec();
 				return true;
 			}
 		}
+		context.dec();
 		assert(context.isFailure());
 		left = null;
 		return false;
