@@ -236,6 +236,10 @@ public class Grammar {
 				rule.testExample1(this, context);
 			}
 		}
+		for(int i=0; i < nameList.size(); i++) {
+			ParsingRule rule = this.getRule(nameList.ArrayValues[i]);
+			System.out.println(rule);
+		}
 	}
 		
 	final UList<ParsingRule> getExportRuleList() {
