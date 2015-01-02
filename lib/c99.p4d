@@ -182,7 +182,11 @@ TopLevel
 	= Directive
 	/ TypeDef
 	/ Declaration
+	/ ExternBlock
 	/ { #Empty } ";"
+
+ExternBlock
+	= _ { "extern" _ "\"C\"" _ "{" ( @TopLevel / _ )*  "}" #Source } _
 
 Declaration
 	= FunctionDeclaration
