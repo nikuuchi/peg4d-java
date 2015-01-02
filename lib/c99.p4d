@@ -196,7 +196,8 @@ Directive
 
 
 FunctionDeclaration
-	= { @AnnotationList @Type _ @Name  _ "(" @FunctionParamList ")" (_ @Block /_ ";") #Function }
+	= { @AnnotationList @Type _ @Name _ "(" @FunctionParamList ")" (_ @Block /_ ";") #Function }
+	/ { @AnnotationList @Type _ @Block #Function }
 
 AnnotationList
 	= { (@Annotation)*  #List } _
@@ -224,7 +225,7 @@ FunctionParam
 //==============
 
 TypeDef
-	= { "typedef" _ @Type (_ @VarName _/_ @Name _)? (',' _ @VarName _/_ @Name _)* ";" #TypeDeclaration }
+	= { "typedef" _ @Type (_ @VarName _ / _ @Name _ )? (',' _ @VarName _/_ @Name _)* ";" #TypeDeclaration }
 
 VariableDeclaration
 	= { @AnnotationList @Type @InitDecl ("," @InitDecl)*  ATTRIBUTE? ";" #Declaration }
@@ -238,7 +239,9 @@ InitDeclAssign
 
 VarName
 	= { "*" @VarName #PointerName } _
-	/ Name {@ "[" (@ConstantExpression)? "]" #ArrayName}*
+	/ Name {@ "[" (@ConstantExpression)? "]" #ArrayName
+			/ "(" @FunctionParamList ")" #TFunc
+			}*
 
 Initializer
 	= AssignmentExpression
@@ -260,6 +263,7 @@ Designator
 
 Type
 	= { "const" _ @TypeSuffix #TConst } _
+	/ { "volatile" _ @TypeSuffix #Volatile } _
 	/ TypeSuffix
 
 TypeSuffix
@@ -268,10 +272,11 @@ TypeSuffix
 		/ "[" (NAME / DIGIT*) "]" #TPointer
 		/ addFuncType
 		/ _ "volatile" #Volatile
+		/ _ "const" #TConst
 	}*
 
 addFuncType
-	= "(" _ ("*"/'^')+ _ (@Name / addFuncType)? (_ "(" @FunctionParamList ")")? _ ")" _  "(" @FunctionParamList ")" #TFunc
+	= "(" _ ("*"/'^')+ _ (@{"const" #TConst} _)? (@Name / addFuncType)? (_ "(" @FunctionParamList ")")? _ ")" _  "(" @FunctionParamList ")" #TFunc
 
 POINTER_QUALIFIER
 	= "const" / "restrict" / "volatile"
@@ -279,10 +284,10 @@ POINTER_QUALIFIER
 PrimaryType
 	= StructDeclaration
 	/ { "void" #TVoid } _
-	/ { SIGN? "char"          #TInt } _
-	/ { SIGN? "short" _ "int" #TInt } _
-	/ { SIGN? "short"         #TInt } _
-	/ { SIGN? "int"           #TInt } _
+	/ { SIGN? CONST? "char"          #TInt } _
+	/ { SIGN? CONST? "short" _ "int" #TInt } _
+	/ { SIGN? CONST? "short"         #TInt } _
+	/ { SIGN? CONST? "int"           #TInt } _
 	/ { "float"       _   #TFloat } _
 	/ { "double"      _   #TFloat } _
 	/ { "long" _ "double" _ #TFloat } _
@@ -292,7 +297,6 @@ PrimaryType
 	/ { "unsigned" `unsigned int` #TInt } _
 	/ { "_Bool" #TBoolean } _
 	/ { "_Complex" #TComplex } _
-	/ { NAME_T #TName } _
 	/ { NAME   #Name } _
 
 StructDeclaration
@@ -302,6 +306,9 @@ StructDeclaration
 
 SIGN
 	= ("signed" / "unsigned" / "__signed") _
+
+CONST
+	= "const" _
 
 NAME_T
 	= !DIGIT (!('_t' !W)  W )+ '_t' !W
@@ -345,6 +352,7 @@ Statement
 	/ { "case" _ @ConstantExpression ":" (!"case" !"default" @Statement)* #SwitchCase }
 	/ { "default" _ ":" (!"case" @Statement)* #SwitchDefault }
 	/ { @Name ":" #Label }
+	/ TypeDef
 	/ { @Expression ";" #ExpressionStatement }
 	/ { #Empty } ";"
 
@@ -431,7 +439,10 @@ addFunctionCall
 	= @{ "(" addArgumentExpressionList? ")" #List} #Apply
 
 addArgumentExpressionList
-	= ((@AssignmentExpression / @Type) ("," (@AssignmentExpression / @Type))*)
+	= ((@AssignmentExpression / @Type) ("," (@TypeP/ @AssignmentExpression / @Type))*)
+
+TypeP
+	= Name {@ "*" #TPointer}+ &(_ (")" / ","))
 
 addIndex
 	= "[" @Expression "]" #Index
