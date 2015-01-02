@@ -60,7 +60,7 @@ public class ParsingChoice extends ParsingList {
 	public boolean simpleMatch(ParsingContext context) {
 		long f = context.rememberFailure();
 		ParsingObject left = context.left;
-		context.inc();
+		//context.inc();
 		for(int i = 0; i < this.size(); i++) {
 			context.left = left;
 			if(this.get(i).matcher.simpleMatch(context)) {
@@ -70,7 +70,7 @@ public class ParsingChoice extends ParsingList {
 				return true;
 			}
 		}
-		context.dec();
+		//context.dec();
 		assert(context.isFailure());
 		left = null;
 		return false;

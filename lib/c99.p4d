@@ -41,6 +41,7 @@ BLOCKCOMMENT
 
 LINECOMMENT
 	= '//' (!'\n' .)*
+	/ "#" (&'\\\n' .. / !'\n' .)*
 
 ATTRIBUTE
 	= '__attribute__' !W _ '((' ATTRIBUTECONTENT '))' _
@@ -195,7 +196,7 @@ Directive
 
 
 FunctionDeclaration
-	= { @AnnotationList @Type _ @Name _ "(" @FunctionParamList ")" (_ @Block /_ ";") #Function }
+	= { @AnnotationList @Type _ @Name  _ "(" @FunctionParamList ")" (_ @Block /_ ";") #Function }
 
 AnnotationList
 	= { (@Annotation)*  #List } _
@@ -266,20 +267,22 @@ TypeSuffix
 		POINTER_QUALIFIER? "*" POINTER_QUALIFIER? #TPointer
 		/ "[" (NAME / DIGIT*) "]" #TPointer
 		/ addFuncType
+		/ _ "volatile" #Volatile
 	}*
 
 addFuncType
-	= "(" _ ("*"/'^') _ (@Name)? (_ "(" @FunctionParamList ")")? _ ")" _  "(" @FunctionParamList ")" #TFunc
+	= "(" _ ("*"/'^')+ _ (@Name / addFuncType)? (_ "(" @FunctionParamList ")")? _ ")" _  "(" @FunctionParamList ")" #TFunc
 
 POINTER_QUALIFIER
-	= "const" / "restrict"
+	= "const" / "restrict" / "volatile"
 
 PrimaryType
 	= StructDeclaration
 	/ { "void" #TVoid } _
-	/ { SIGN? "char"         #TInt } _
-	/ { SIGN? "short"        #TInt } _
-	/ { SIGN? "int"          #TInt } _
+	/ { SIGN? "char"          #TInt } _
+	/ { SIGN? "short" _ "int" #TInt } _
+	/ { SIGN? "short"         #TInt } _
+	/ { SIGN? "int"           #TInt } _
 	/ { "float"       _   #TFloat } _
 	/ { "double"      _   #TFloat } _
 	/ { "long" _ "double" _ #TFloat } _

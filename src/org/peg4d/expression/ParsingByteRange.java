@@ -44,7 +44,6 @@ public class ParsingByteRange extends ParsingExpression {
 		}
 		context.failure(this);
 		if(context.isSilentFail()) {
-			System.out.println(this.toString());
 			context.addSilentFail(this.toString());
 		}
 		return false;

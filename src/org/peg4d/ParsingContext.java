@@ -26,9 +26,9 @@ public class ParsingContext {
 	}
 
 	public void inc() {
-		if(choiceDepth == 0) {
-			errorList.clear();
-		}
+		//if(choiceDepth == 0) {
+		//	errorList.clear();
+		//}
 		choiceDepth++;
 	}
 
@@ -37,22 +37,27 @@ public class ParsingContext {
 	}
 
 	public boolean isSilentFail() {
-		return choiceDepth != 0;
+		return choiceDepth == 0;
 	}
 
 	public void addSilentFail(String s) {
+		if(pos < fpos) {
+			return;
+		}
 		errorList.add(s);
 	}
 
 	public void dumpFail() {
 		Iterator<String>it = errorList.iterator();
 		if(it.hasNext()) {
+
+			System.out.print("SyntaxError: Expected ");
 			System.out.print(it.next());
 		}
 		while(it.hasNext()) {
 			System.out.print(" / " + it.next());
 		}
-		System.out.println(" is Expected");
+		System.out.println(" but not found.");
 	}
 
 	public ParsingContext(ParsingSource s) {
@@ -108,6 +113,9 @@ public class ParsingContext {
 	public final void failure(ParsingMatcher errorInfo) {
 		if(this.pos > fpos) {  // adding error location
 			this.fpos = this.pos;
+			if(this.isSilentFail()) {
+				//errorList.clear();
+			}
 		}
 		this.left = null;
 	}
