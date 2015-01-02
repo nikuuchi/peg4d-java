@@ -431,7 +431,7 @@ addFunctionCall
 	= @{ "(" addArgumentExpressionList? ")" #List} #Apply
 
 addArgumentExpressionList
-	= (@AssignmentExpression ("," @AssignmentExpression)*)
+	= ((@AssignmentExpression / @Type) ("," (@AssignmentExpression / @Type))*)
 
 addIndex
 	= "[" @Expression "]" #Index
@@ -500,7 +500,7 @@ DECIMAL
 	= [1-9] DIGIT*
 
 HEXICAL
-	= HEX_PREFIX HEX+
+	= '0' [xX] ([0-9] / [A-F] / [a-f])+
 
 OCTAL
 	= '0' [0-7]*
