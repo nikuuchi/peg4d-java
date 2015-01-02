@@ -7,6 +7,7 @@ import org.peg4d.pegcode.GrammarVisitor;
 
 public class ParsingByte extends ParsingExpression {
 	public int byteChar;
+	private String expectedInput;
 	String errorToken = null;
 	ParsingByte(int ch) {
 		super();
@@ -26,6 +27,9 @@ public class ParsingByte extends ParsingExpression {
 	@Override
 	public String expectedToken() {
 		if(this.errorToken != null) {
+			if(!this.errorToken.contains("'")) {
+				return "'" + this.errorToken + "'";
+			}
 			return this.errorToken;
 		}
 		return this.toString();
@@ -49,7 +53,7 @@ public class ParsingByte extends ParsingExpression {
 			if(this.po != null) {
 				System.out.println(this.po.getText());
 			}
-			context.addSilentFail(this.toString());
+			context.addSilentFail(this.expectedToken());
 		}
 		return false;
 	}

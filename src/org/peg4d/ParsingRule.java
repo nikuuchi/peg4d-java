@@ -44,9 +44,6 @@ public class ParsingRule {
 		case ObjectRule:    t = "Object "; break;
 		case OperationRule: t = "void "; break;
 		}
-		for(int i = 0; i < this.expr.size(); i++) {
-			System.out.println(this.expr.get(i).getClass());
-		}
 		return t + this.ruleName + "[" + this.minlen + "]" + "=" + this.expr;
 	}
 	

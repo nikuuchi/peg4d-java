@@ -4,6 +4,7 @@ import java.util.TreeMap;
 
 import org.peg4d.expression.NonTerminal;
 import org.peg4d.expression.Optimizer;
+import org.peg4d.expression.ParsingByte;
 import org.peg4d.expression.ParsingChoice;
 import org.peg4d.expression.ParsingDef;
 import org.peg4d.expression.ParsingExpression;
@@ -238,10 +239,17 @@ public class Grammar {
 		}
 		for(int i=0; i < nameList.size(); i++) {
 			ParsingRule rule = this.getRule(nameList.ArrayValues[i]);
-			System.out.println(rule);
+			appendExpectedString(rule.expr);
 		}
+		//System.out.println("---------------------------------------");
 	}
 		
+	private void appendExpectedString(ParsingExpression expr) {
+		if (expr instanceof ParsingByte) {
+			ParsingByte pb = (ParsingByte) expr;
+		}
+	}
+
 	final UList<ParsingRule> getExportRuleList() {
 		if(this.exportedRuleList == null) {
 			UList<ParsingRule> l = new UList<ParsingRule>(new ParsingRule[4]);
