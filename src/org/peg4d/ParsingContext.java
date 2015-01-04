@@ -38,6 +38,10 @@ public class ParsingContext {
 		return choiceDepth == 0;
 	}
 
+	public void addF(String s) {
+		errorList.add(s);
+	}
+
 	public void addFailureList(String s) {
 		if(pos < fpos) {
 			return;

@@ -133,7 +133,9 @@ public class NonTerminal extends ParsingExpression {
 		if(desc != null) {
 			context.dec();
 			if(!b) {
-				context.addFailureList(desc);
+				if(context.isSilentFail()) {
+					context.addF(desc);
+				}
 			}
 		}
 		context.popCallStack(stackTop);
