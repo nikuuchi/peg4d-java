@@ -49,6 +49,6 @@ public class ParsingByteRange extends ParsingExpression {
 
 	@Override
 	public String toString() {
-		return "[" + startByteChar + "-" + endByteChar +"]";
+		return "[" +String.valueOf((char)startByteChar) + "-" + String.valueOf((char)endByteChar) +"]";
 	}
 }

@@ -53,17 +53,20 @@ public class ParsingContext {
 
 	public void dumpFail() {
 		Iterator<String>it = errorList.iterator();
+		boolean b = false;
 		if(it.hasNext()) {
-
+			b = true;
 			System.out.print("SyntaxError: Expected ");
 			System.out.print(it.next());
 		}
 		while(it.hasNext()) {
 			System.out.print(" / " + it.next());
 		}
-		System.out.print(" but ");
-		System.out.print(errorInput.replaceAll("\n", "\\\\n"));
-		System.out.println(" is found.");
+		if(b) {
+			System.out.print(" but ");
+			//System.out.print(errorInput.replaceAll("\n", "\\\\n"));
+			System.out.println(" not found.");
+		}
 	}
 
 	public ParsingContext(ParsingSource s) {
