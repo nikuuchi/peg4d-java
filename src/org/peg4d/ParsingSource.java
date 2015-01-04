@@ -343,6 +343,9 @@ class StringSource extends ParsingSource {
 		while(this.utf8[i] != '\n') {
 			i--;
 			count++;
+			if(i < 0) {
+				break;
+			}
 		}
 		return count;
 	}
