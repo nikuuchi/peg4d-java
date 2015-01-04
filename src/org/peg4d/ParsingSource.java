@@ -24,6 +24,7 @@ public abstract class ParsingSource {
 		this.startLineNum = linenum;
 	}
 
+
 	public abstract int     byteAt(long pos);
 	public abstract int     fastByteAt(long pos);
 	public abstract long    length();
@@ -98,6 +99,7 @@ public abstract class ParsingSource {
 	public abstract boolean match(long pos, byte[] text);
 	public abstract String  substring(long startIndex, long endIndex);
 	public abstract long    linenum(long pos);
+	public abstract long linecolumn(long pos);
 	
 	public final String getResourceName() {
 		return fileName;
@@ -329,6 +331,21 @@ class StringSource extends ParsingSource {
 		}
 		return count;
 	}
+
+	@Override
+	public final long linecolumn(long pos) {
+		int end = (int)pos;
+		int count = 0;
+		if(end >= this.utf8.length) {
+			end = this.utf8.length;
+		}
+		int i = end;
+		while(this.utf8[i] != '\n') {
+			i--;
+			count++;
+		}
+		return count;
+	}
 }
 
 class FileSource extends ParsingSource {
@@ -488,7 +505,20 @@ class FileSource extends ParsingSource {
 		}
 		return count;
 	}
-	
+
+	@Override
+	public long linecolumn(long pos) {
+		byteAt(pos); // restore buffer at pos
+		int offset = (int)(pos - this.buffer_offset);
+		int count = 0;
+		int i = offset;
+		while(this.buffer[i] != '\n') {
+				i--;
+				count++;
+		}
+		return count;
+	}
+
 	private void readMainBuffer(long pos) {
 		int index = lineIndex(pos);
 		if(this.lines[index] == 0) {

@@ -56,7 +56,7 @@ public class ParsingContext {
 		boolean b = false;
 		if(it.hasNext()) {
 			b = true;
-			System.out.print("SyntaxError: Expected ");
+			System.out.print("Line "+ source.linenum(fpos) +" Column "+ source.linecolumn(fpos) +": Syntax Error: Expected ");
 			System.out.print(it.next());
 		}
 		while(it.hasNext()) {
