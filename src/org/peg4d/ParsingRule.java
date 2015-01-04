@@ -77,6 +77,18 @@ public class ParsingRule {
 	public void addAnotation(String key, ParsingObject value) {
 		this.annotation = new PegRuleAnnotation(key,value, this.annotation);
 	}
+
+	public String getDescription() {
+		PegRuleAnnotation a = this.annotation;
+		while(a != null) {
+			boolean isDescription = a.key.equals("description");
+			if(isDescription) {
+				return a.value.getText();
+			}
+			a = a.next;
+		}
+		return null;
+	}
 	
 	public final void testExample1(Grammar peg, ParsingContext context) {
 		PegRuleAnnotation a = this.annotation;

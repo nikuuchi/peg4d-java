@@ -85,6 +85,12 @@ class StringSource extends ParsingSource {
 		}
 		return count;
 	}
+
+	@Override
+	public long linecolumn(long pos) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }
 
 // helper utility. future may be removed

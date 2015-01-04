@@ -124,7 +124,18 @@ public class NonTerminal extends ParsingExpression {
 	@Override
 	public boolean simpleMatch(ParsingContext context) {
 		int stackTop = context.pushCallStack(this);
+		ParsingRule rule = this.getRule();
+		String desc = rule.getDescription();
+		if(desc != null) {
+			context.inc();
+		}
 		boolean b = this.deReference().matcher.simpleMatch(context);
+		if(desc != null) {
+			context.dec();
+			if(!b) {
+				context.addFailureList(desc);
+			}
+		}
 		context.popCallStack(stackTop);
 		return b;
 	}

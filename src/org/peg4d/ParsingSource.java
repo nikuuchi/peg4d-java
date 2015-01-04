@@ -507,7 +507,7 @@ class FileSource extends ParsingSource {
 	}
 
 	@Override
-	public long linecolumn(long pos) {
+	public final long linecolumn(long pos) {
 		byteAt(pos); // restore buffer at pos
 		int offset = (int)(pos - this.buffer_offset);
 		int count = 0;

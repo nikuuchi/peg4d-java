@@ -42,8 +42,11 @@ public class ParsingByteRange extends ParsingExpression {
 			context.consume(1);
 			return true;
 		}
-		//context.failure(this);
-		context.addFailureList(toString());
+		if(context.isSilentFail()) {
+			context.addFailureList(toString());
+		} else {
+			context.failure(this);
+		}
 		return false;
 	}
 

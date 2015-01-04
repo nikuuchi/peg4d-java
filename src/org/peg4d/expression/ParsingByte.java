@@ -48,8 +48,11 @@ public class ParsingByte extends ParsingExpression {
 			context.consume(1);
 			return true;
 		}
-		//context.failure(this);
-		context.addFailureList(this.expectedToken());
+		if(context.isSilentFail()) {
+			context.addFailureList(this.expectedToken());
+		} else {
+			context.failure(this);
+		}
 		return false;
 	}
 }

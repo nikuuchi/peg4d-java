@@ -31,19 +31,24 @@ Chunk
 	/ Expression
 	/ Type
 _
+	[description: Comment]
 	= (S / BLOCKCOMMENT / LINECOMMENT / ATTRIBUTE)*
 
 S
+	[description: Comment]
 	= [ \n\r\t\u000B\u000C]
 
 BLOCKCOMMENT
+	[description: Comment]
 	= '/*' (!'*/' .)* '*/'
 
 LINECOMMENT
+	[description: Comment]
 	= '//' (!'\n' .)*
 	/ "#" (&'\\\n' .. / !'\n' .)*
 
 ATTRIBUTE
+	[description: Attribute]
 	= '__attribute__' !W _ '((' ATTRIBUTECONTENT '))' _
 	/ '__asm' !W _ '(' (!')' .)* ')' _
 
@@ -207,6 +212,7 @@ AnnotationList
 	= { (@Annotation)*  #List } _
 
 Annotation
+	[description: Annotation]
 	= "extern"     { #KeyValue @{`extern` #Key } @{`true` #Value } } _
 	/ "static"     { #KeyValue @{`static` #Key } @{`true` #Value } } _
 	/ "inline"     { #KeyValue @{`inline` #Key } @{`true` #Value } } _
@@ -269,6 +275,7 @@ Designator
 //====
 
 Type
+	[description: Type]
 	= { "const" _ @TypeSuffix #TConst } _
 	/ { "volatile" _ @TypeSuffix #Volatile } _
 	/ TypeSuffix
@@ -310,6 +317,7 @@ PrimaryType
 	/ { NAME   #Name } _
 
 StructDeclaration
+	[description: Struct]
 	= { "struct" _ (@Name)? addStructMember? #TStruct }
 	/ { "union"  _ (@Name)? addStructMember?  #TUnion }
 	/ { "enum"   _ (@Name)? ("{" @EnumeratorList ","? "}")? #TEnum }
@@ -348,6 +356,7 @@ Block
 	= { "{" (@Directive /  @Statement / @Declaration / _ )* "}" #Block }
 
 Statement
+	[description: Statement]
 	= Block
 	/ { "if" _  "(" @Expression ")" @Statement ("else" _ @Statement)? #If }
 	/ { "switch" _ "(" @Expression ")" @Statement #Switch }
