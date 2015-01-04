@@ -33,10 +33,8 @@ public class ParsingAny extends ParsingExpression {
 			context.consume(len);
 			return true;
 		}
-		if(context.isSilentFail()) {
-			context.addSilentFail("Any");
-		}
-		context.failure(this);
+		context.addFailureList("Any Character");
+		//context.failure(this);
 		return false;
 	}
 }

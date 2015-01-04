@@ -1,9 +1,9 @@
 package org.peg4d;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
 
 import org.peg4d.expression.NonTerminal;
 import org.peg4d.expression.ParsingConstructor;
@@ -14,7 +14,8 @@ public class ParsingContext {
 	public ParsingSource source;
 	NezLogger    stat   = null;
 	int choiceDepth = 0;
-	Set<String> errorList;
+	List<String> errorList;
+	String errorInput = "";
 
 
 	public ParsingContext(ParsingSource s, long pos, int stacksize, MemoTable memo) {
@@ -22,13 +23,10 @@ public class ParsingContext {
 		this.source = s;
 		this.resetSource(s, pos);
 		this.memoTable = memo != null ? memo : new NoMemoTable(0, 0);
-		this.errorList = new HashSet<String>();
+		this.errorList = new ArrayList<String>();
 	}
 
 	public void inc() {
-		//if(choiceDepth == 0) {
-		//	errorList.clear();
-		//}
 		choiceDepth++;
 	}
 
@@ -40,11 +38,17 @@ public class ParsingContext {
 		return choiceDepth == 0;
 	}
 
-	public void addSilentFail(String s) {
+	public void addFailureList(String s) {
 		if(pos < fpos) {
 			return;
 		}
+		if(pos > fpos) {
+			fpos = pos;
+			errorList.clear();
+		}
+		left = null;
 		errorList.add(s);
+		errorInput = source.substring(pos, pos+1);
 	}
 
 	public void dumpFail() {
@@ -57,7 +61,9 @@ public class ParsingContext {
 		while(it.hasNext()) {
 			System.out.print(" / " + it.next());
 		}
-		System.out.println(" but not found.");
+		System.out.print(" but ");
+		System.out.print(errorInput.replaceAll("\n", "\\\\n"));
+		System.out.println(" is found.");
 	}
 
 	public ParsingContext(ParsingSource s) {
@@ -113,9 +119,6 @@ public class ParsingContext {
 	public final void failure(ParsingMatcher errorInfo) {
 		if(this.pos > fpos) {  // adding error location
 			this.fpos = this.pos;
-			if(this.isSilentFail()) {
-				//errorList.clear();
-			}
 		}
 		this.left = null;
 	}

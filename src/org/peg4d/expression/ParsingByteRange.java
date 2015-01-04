@@ -42,10 +42,13 @@ public class ParsingByteRange extends ParsingExpression {
 			context.consume(1);
 			return true;
 		}
-		context.failure(this);
-		if(context.isSilentFail()) {
-			context.addSilentFail(this.toString());
-		}
+		//context.failure(this);
+		context.addFailureList(toString());
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return "[" + startByteChar + "-" + endByteChar +"]";
 	}
 }
