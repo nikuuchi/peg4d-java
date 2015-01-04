@@ -1,9 +1,9 @@
 package org.peg4d;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 
 import org.peg4d.expression.NonTerminal;
 import org.peg4d.expression.ParsingConstructor;
@@ -14,7 +14,7 @@ public class ParsingContext {
 	public ParsingSource source;
 	NezLogger    stat   = null;
 	int choiceDepth = 0;
-	List<String> errorList;
+	Set<String> errorList;
 	String errorInput = "";
 
 
@@ -23,7 +23,7 @@ public class ParsingContext {
 		this.source = s;
 		this.resetSource(s, pos);
 		this.memoTable = memo != null ? memo : new NoMemoTable(0, 0);
-		this.errorList = new ArrayList<String>();
+		this.errorList = new HashSet<String>();
 	}
 
 	public void inc() {

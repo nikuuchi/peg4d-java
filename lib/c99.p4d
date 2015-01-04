@@ -75,12 +75,14 @@ HEX4
 	= HEX HEX HEX HEX
 
 Name
+	[description: Name]
 	= { NAME #Name } _ 
 
 NAME
 	= !DIGIT !(KEYWORD !W) W+
 
 KEYWORD
+	[description: KeyWord]
 	= 'auto' / 'break' / 'case' / 'char' / 'const' / 'continue' / 'default' 
 	/ 'double' / 'do' / 'else' / 'enum' / 'extern' / 'float' / 'for' 
 	/ 'goto' / 'if' / 'int' / 'inline' / 'long' / 'register' / 'restrict' 
@@ -205,6 +207,7 @@ Directive
 
 
 FunctionDeclaration
+	[description: Function]
 	= { @AnnotationList @Type _ @Name _ "(" @FunctionParamList ")" (_ @Block /_ ";") #Function }
 	/ { @AnnotationList @Type _ @Block #Function }
 
@@ -235,12 +238,14 @@ FunctionParam
 //==============
 
 TypeDef
+	[description: Typedef]
 	= { "typedef" _ @Type (_ @TypeDefName _ )? (',' _ @TypeDefName  _)* ";" #TypeDeclaration }
 
 TypeDefName
 	= <def TypeName (VarName / Name) >
 
 VariableDeclaration
+	[description: VariableDecl]
 	= { @AnnotationList @Type @InitDecl ("," @InitDecl)*  ATTRIBUTE? ";" #Declaration }
 	/ { @AnnotationList @Type ("=" @Initializer)? ("," @InitDecl)* ATTRIBUTE? ";" #Declaration }
 
