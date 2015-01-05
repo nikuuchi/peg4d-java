@@ -132,10 +132,8 @@ public class NonTerminal extends ParsingExpression {
 		boolean b = this.deReference().matcher.simpleMatch(context);
 		if(desc != null) {
 			context.dec();
-			if(!b) {
-				if(context.isSilentFail()) {
-					context.addF(desc);
-				}
+			if(!b && context.isSilentFail()) {
+				context.addFailureList(desc);
 			}
 		}
 		context.popCallStack(stackTop);

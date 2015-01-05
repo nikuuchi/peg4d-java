@@ -339,7 +339,7 @@ class StringSource extends ParsingSource {
 		if(end >= this.utf8.length) {
 			end = this.utf8.length;
 		}
-		int i = end;
+		int i = end-1;
 		while(this.utf8[i] != '\n') {
 			i--;
 			count++;
@@ -514,7 +514,7 @@ class FileSource extends ParsingSource {
 		byteAt(pos); // restore buffer at pos
 		int offset = (int)(pos - this.buffer_offset);
 		int count = 0;
-		int i = offset;
+		int i = offset-1;
 		while(this.buffer[i] != '\n') {
 			i--;
 			count++;

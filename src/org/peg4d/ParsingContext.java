@@ -124,9 +124,9 @@ public class ParsingContext {
 	}
 	
 	public final void failure(ParsingMatcher errorInfo) {
-		if(this.pos > fpos) {  // adding error location
-			this.fpos = this.pos;
-		}
+		//if(this.pos > fpos) {  // adding error location
+		//	this.fpos = this.pos;
+		//}
 		this.left = null;
 	}
 	
