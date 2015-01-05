@@ -201,6 +201,7 @@ Declaration
 	/ VariableDeclaration
 
 Directive
+	[description: Directive]
 	= "#" "include" { (!'\n' .)* #Include }
 	/ "#" "define"  { (&'\\\n' .. / !'\n' .)* #Define }
 	/ "#" { (&'\\\n' .. / !'\n' .)* #TODO }
@@ -245,7 +246,6 @@ TypeDefName
 	= <def TypeName (VarName / Name) >
 
 VariableDeclaration
-	[description: VariableDecl]
 	= { @AnnotationList @Type @InitDecl ("," @InitDecl)*  ATTRIBUTE? ";" #Declaration }
 	/ { @AnnotationList @Type ("=" @Initializer)? ("," @InitDecl)* ATTRIBUTE? ";" #Declaration }
 
@@ -440,6 +440,7 @@ MultiplicativeExpression
 	= CastExpression {@ ( "*" #Mul / "/" #Div / "%" #Mod ) @CastExpression }*
 
 UnaryExpression
+	[description: Expression]
 	= PostfixExpression
 	/ { "++"    @UnaryExpression #PrefixInc }
 	/ { "--"    @UnaryExpression #PrefixDec }
@@ -498,6 +499,7 @@ Constant
 	/ CChar
 
 CFloat
+	[description: Float]
 	= { ( DECIMAL_FLOAT / HEX_FLOAT )  #Float } FLOAT_SUFFIX? _
 
 DECIMAL_FLOAT
@@ -529,6 +531,7 @@ FLOAT_SUFFIX
 	= [flFL]
 
 CInteger
+	[description: Integer]
 	= { ( HEXICAL / DECIMAL / OCTAL ) #Integer } INT_SUFFIX? _
 
 DECIMAL

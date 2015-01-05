@@ -4,8 +4,11 @@
 export
 	= Expr
 
+_
+	= [ \t]*
+
 File
-	= Expr .*
+	= Expr _
 
 Chunk
 	= Expr
@@ -22,6 +25,9 @@ Product
 	= Value {@ ( '*' #Mul / '/' #Div / '%' #Mod ) @Value }*
 
 Value
-	= { DIGIT+ #Integer }
+	= Integer
 	/ '(' Expr ')'
 
+Integer
+	[description: Integer]
+	= { DIGIT+ #Integer }
