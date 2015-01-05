@@ -88,9 +88,9 @@ public class ParsingContext {
 			System.out.print(" / " + it.next());
 		}
 		if(b) {
-			System.out.print(" but ");
-			//System.out.print(errorInput.replaceAll("\n", "\\\\n"));
-			System.out.println(" not found.");
+			System.out.print(" but '");
+			System.out.print(e.getInput().replaceAll("\n", "\\\\n"));
+			System.out.println("' found.");
 		}
 	}
 
