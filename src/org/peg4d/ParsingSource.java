@@ -99,7 +99,7 @@ public abstract class ParsingSource {
 	public abstract boolean match(long pos, byte[] text);
 	public abstract String  substring(long startIndex, long endIndex);
 	public abstract long    linenum(long pos);
-	public abstract long linecolumn(long pos);
+	public abstract long columnnum(long pos);
 	
 	public final String getResourceName() {
 		return fileName;
@@ -333,13 +333,17 @@ class StringSource extends ParsingSource {
 	}
 
 	@Override
-	public final long linecolumn(long pos) {
+	public final long columnnum(long pos) {
 		int end = (int)pos;
 		int count = 0;
 		if(end >= this.utf8.length) {
 			end = this.utf8.length;
 		}
 		int i = end;
+		if(i > 0 && this.utf8[i] == '\n') {
+			i--;
+			count++;
+		}
 		while(this.utf8[i] != '\n') {
 			i--;
 			count++;
@@ -510,11 +514,14 @@ class FileSource extends ParsingSource {
 	}
 
 	@Override
-	public final long linecolumn(long pos) {
+	public final long columnnum(long pos) {
 		byteAt(pos); // restore buffer at pos
 		int offset = (int)(pos - this.buffer_offset);
 		int count = 0;
 		int i = offset;
+		if(i > 0 && this.buffer[i] == '\n') {
+			i--;
+		}
 		while(this.buffer[i] != '\n') {
 			i--;
 			count++;

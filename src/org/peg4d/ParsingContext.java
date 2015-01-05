@@ -59,7 +59,7 @@ public class ParsingContext {
 		errorInfo.addExpected(s);
 		errorInfo.setInput(source.substring(fpos, fpos+1));
 		errorInfo.setLine(source.linenum(fpos));
-		errorInfo.setColumn(source.linecolumn(fpos));
+		errorInfo.setColumn(source.columnnum(fpos));
 	}
 
 	public void stackError() {
