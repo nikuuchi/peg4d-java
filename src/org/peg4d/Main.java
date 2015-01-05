@@ -337,20 +337,22 @@ public class Main {
 			ParsingContext context = new ParsingContext(newParsingSource(peg));
 			ParsingObject po = context.parse(peg, StartingPoint, new MemoizationManager());
 			if(context.isFailure()) {
-				System.out.println(context.source.formatPositionLine("error", context.fpos, context.getErrorMessage()));
-				System.out.println(context.source.formatPositionLine("maximum matched", context.head_pos, ""));
-				context.dumpFail();
 				if(Main.DebugLevel > 0) {
-					System.out.println(context.maximumFailureTrace);
+					//System.out.println(context.maximumFailureTrace);
+					context.dumpFail();
+				} else {
+					System.out.println(context.source.formatPositionLine("error", context.fpos, context.getErrorMessage()));
+					System.out.println(context.source.formatPositionLine("maximum matched", context.head_pos, ""));
 				}
 				return;
 			}
 			if(context.hasByteChar()) {
-				System.out.println(context.source.formatPositionLine("unconsumed", context.pos, ""));
-				System.out.println(context.source.formatPositionLine("maximum matched", context.head_pos, ""));
-				context.dumpFail();
 				if(Main.DebugLevel > 0) {
-					System.out.println(context.maximumFailureTrace);
+					//System.out.println(context.maximumFailureTrace);
+					context.dumpFail();
+				} else {
+					System.out.println(context.source.formatPositionLine("unconsumed", context.pos, ""));
+					System.out.println(context.source.formatPositionLine("maximum matched", context.head_pos, ""));
 				}
 			}
 			ParsingWriter.writeAs(OutputWriterClass, OutputFileName, po);

@@ -2,7 +2,6 @@ package org.peg4d;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -101,6 +100,7 @@ public class ParsingContext {
 			System.out.print(" but ");
 			System.out.print(e.getInput().replaceAll("\n", "\\\\n"));
 			System.out.println(" found.");
+			System.out.println(source.getTextAround(e.reportedPos, "\n "));
 		}
 	}
 
