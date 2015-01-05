@@ -1,9 +1,10 @@
 package org.peg4d;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
 
 import org.peg4d.expression.NonTerminal;
 import org.peg4d.expression.ParsingConstructor;
@@ -14,8 +15,11 @@ public class ParsingContext {
 	public ParsingSource source;
 	NezLogger    stat   = null;
 	int choiceDepth = 0;
-	Set<String> errorList;
-	String errorInput = "";
+	//Set<String> errorList;
+	//String errorInput = "";
+
+	private ErrorInfo errorInfo;
+	private List<ErrorInfo> errorList;
 
 
 	public ParsingContext(ParsingSource s, long pos, int stacksize, MemoTable memo) {
@@ -23,7 +27,8 @@ public class ParsingContext {
 		this.source = s;
 		this.resetSource(s, pos);
 		this.memoTable = memo != null ? memo : new NoMemoTable(0, 0);
-		this.errorList = new HashSet<String>();
+		this.errorList = new ArrayList<ErrorInfo>();
+		errorInfo = new ErrorInfo();
 	}
 
 	public void inc() {
@@ -39,7 +44,7 @@ public class ParsingContext {
 	}
 
 	public void addF(String s) {
-		errorList.add(s);
+		errorInfo.addExpected(s);
 	}
 
 	public void addFailureList(String s) {
@@ -48,19 +53,35 @@ public class ParsingContext {
 		}
 		if(pos > fpos) {
 			fpos = pos;
-			errorList.clear();
+			errorInfo.clearExpected();
 		}
 		left = null;
-		errorList.add(s);
-		errorInput = source.substring(pos, pos+1);
+		errorInfo.addExpected(s);
+		errorInfo.setInput(source.substring(fpos, fpos+1));
+		errorInfo.setLine(source.linenum(fpos));
+		errorInfo.setColumn(source.linecolumn(fpos));
+	}
+
+	public void stackError() {
+		errorList.add(errorInfo);
+		errorInfo = new ErrorInfo();
 	}
 
 	public void dumpFail() {
-		Iterator<String>it = errorList.iterator();
+		errorList.add(errorInfo);
+		for(ErrorInfo e: errorList) {
+			dumpF(e);
+		}
+	}
+
+	private void dumpF(ErrorInfo e) {
+		Iterator<String>it = e.getExpected().iterator();
+		long line = e.getLine();
+		long column = e.getColumn();
 		boolean b = false;
 		if(it.hasNext()) {
 			b = true;
-			System.out.print("Line "+ source.linenum(fpos) +" Column "+ source.linecolumn(fpos) +": Syntax Error: Expected ");
+			System.out.print("Line "+ line +" Column "+ column +": Syntax Error: Expected ");
 			System.out.print(it.next());
 		}
 		while(it.hasNext()) {
