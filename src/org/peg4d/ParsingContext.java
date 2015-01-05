@@ -57,9 +57,19 @@ public class ParsingContext {
 		}
 		left = null;
 		errorInfo.addExpected(s);
-		errorInfo.setInput(source.substring(fpos, fpos+1));
-		errorInfo.setLine(source.linenum(fpos));
-		errorInfo.setColumn(source.columnnum(fpos));
+	}
+
+	public void setReportedPos() {
+		if(errorInfo.reportedPos < pos) {
+			errorInfo.reportedPos = pos;
+			errorInfo.setLine(source.linenum(pos));
+			errorInfo.setColumn(source.columnnum(pos));
+			if(source.length() > pos) {
+				errorInfo.setInput("'" + source.substring(pos, pos+1) + "'");
+			} else {
+				errorInfo.setInput("end of input");
+			}
+		}
 	}
 
 	public void stackError() {
@@ -88,9 +98,9 @@ public class ParsingContext {
 			System.out.print(" / " + it.next());
 		}
 		if(b) {
-			System.out.print(" but '");
+			System.out.print(" but ");
 			System.out.print(e.getInput().replaceAll("\n", "\\\\n"));
-			System.out.println("' found.");
+			System.out.println(" found.");
 		}
 	}
 

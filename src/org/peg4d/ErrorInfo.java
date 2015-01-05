@@ -2,7 +2,6 @@ package org.peg4d;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 public class ErrorInfo {
@@ -11,6 +10,7 @@ public class ErrorInfo {
 	private String input;
 	private long line;
 	private long column;
+	public long reportedPos;
 
 	ErrorInfo() {
 		expected = new HashSet<String>();

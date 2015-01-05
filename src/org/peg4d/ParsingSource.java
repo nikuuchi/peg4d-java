@@ -337,7 +337,7 @@ class StringSource extends ParsingSource {
 		int end = (int)pos;
 		int count = 0;
 		if(end >= this.utf8.length) {
-			end = this.utf8.length;
+			end = this.utf8.length-1;
 		}
 		int i = end;
 		if(i > 0 && this.utf8[i] == '\n') {

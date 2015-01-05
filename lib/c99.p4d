@@ -82,7 +82,7 @@ NAME
 	= !DIGIT !(KEYWORD !W) W+
 
 KEYWORD
-	[description: KeyWord]
+	[description: Keyword]
 	= 'auto' / 'break' / 'case' / 'char' / 'const' / 'continue' / 'default' 
 	/ 'double' / 'do' / 'else' / 'enum' / 'extern' / 'float' / 'for' 
 	/ 'goto' / 'if' / 'int' / 'inline' / 'long' / 'register' / 'restrict' 
@@ -426,21 +426,20 @@ ANDExpression
 
 EqualityExpression
 	= RelationalExpression {@ ( "==" #Equals / "!=" #NotEquals ) @RelationalExpression }*
-	
+
 RelationalExpression
 	= ShiftExpression {@ ( "<=" #LessThanEquals / ">=" #GreaterThanEquals / "<" #LessThan / ">" #GreaterThan ) @ShiftExpression }*
-	
+
 ShiftExpression
 	= AdditiveExpression {@ ( "<<" #LeftShift / ">>" #RightShift ) @AdditiveExpression }*
-	
+
 AdditiveExpression
 	= MultiplicativeExpression {@ ( "+" #Add / "-" #Sub ) @MultiplicativeExpression }*
-	
+
 MultiplicativeExpression
 	= CastExpression {@ ( "*" #Mul / "/" #Div / "%" #Mod ) @CastExpression }*
 
 UnaryExpression
-	[description: Expression]
 	= PostfixExpression
 	/ { "++"    @UnaryExpression #PrefixInc }
 	/ { "--"    @UnaryExpression #PrefixDec }
@@ -489,7 +488,7 @@ PrimaryExpression
 	/ CString
 	/ "(" Expression ")"
 	/ Name
-	
+
 //Literal
 //=======
 

@@ -87,7 +87,7 @@ class StringSource extends ParsingSource {
 	}
 
 	@Override
-	public long linecolumn(long pos) {
+	public long columnnum(long pos) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

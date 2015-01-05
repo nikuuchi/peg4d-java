@@ -136,6 +136,9 @@ public class NonTerminal extends ParsingExpression {
 				context.addFailureList(desc);
 			}
 		}
+		if(b) {
+			context.setReportedPos();
+		}
 		context.popCallStack(stackTop);
 		return b;
 	}
